@@ -22,6 +22,13 @@ type Quarry struct {
 	err     error
 }
 
+func (q *Quarry) Dialect() Dialect {
+	if q == nil {
+		return ""
+	}
+	return q.dialect
+}
+
 func New(d Dialect) *Quarry {
 	q := &Quarry{dialect: d}
 	if !isSupportedDialect(d) {
