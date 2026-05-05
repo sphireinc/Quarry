@@ -86,9 +86,12 @@ if err := cx.AddRecipe("users.search", codex.NewRecipe(func(qq *quarry.Quarry, p
 	panic(err)
 }
 
-q := cx.MustRecipe("users.search").Build(qq, UserSearchParams{
+q, err := cx.MustRecipe("users.search").Build(qq, UserSearchParams{
 	Search: "%bob%",
 })
+if err != nil {
+	panic(err)
+}
 
 users, err := scan.All[User](ctx, db, q)
 if err != nil {
