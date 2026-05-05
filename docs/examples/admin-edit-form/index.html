@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Admin edit form example for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Admin edit form - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="admin-edit-form">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Admin Edit Form</h1>
+                <p class="lead">
+                  This is the pattern for a back-office form: several optional fields, a few values
+                  that can be intentionally cleared, and a returning clause so the UI can refresh
+                  from the database instead of guessing.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>The form payload</h2>
+            <pre><code>type AdminUserForm struct {
+    ID          int
+    DisplayName *string
+    Email       *string
+    Bio         *string
+    Enabled     *bool
+    TeamID      *int
+}</code></pre>
+            <p>
+              The important bit is that the form uses pointers for fields that may be omitted. A nil
+              pointer means “leave it alone.” A non-nil pointer means “the user actually submitted
+              something.”
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Apply the patch</h2>
+            <pre><code>func UpdateUser(ctx context.Context, db scan.Queryer, qq *quarry.Quarry, form AdminUserForm) (*AdminUserRow, error) {
+    q := qq.Update("users").
+        SetOptional("display_name", form.DisplayName).
+        SetOptional("email", form.Email).
+        SetOptional("bio", form.Bio).
+        SetIf(form.Enabled != nil, "enabled", *form.Enabled).
+        SetIf(form.TeamID != nil, "team_id", *form.TeamID).
+        Where(quarry.Eq("id", form.ID)).
+        Returning("id", "display_name", "email", "bio", "enabled", "team_id")
+
+    return scan.One[AdminUserRow](ctx, db, q)
+}</code></pre>
+            <div class="callout info">
+              <strong>Why this is better than manual branching</strong>
+              The builder takes care of the SET list and the dialect-specific RETURNING clause. The
+              handler only decides which fields are present.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>When a field must be clearable</h2>
+            <p>
+              If the UI needs to clear a value, send an explicit nil-or-empty signal. In this sample,
+              <code>DisplayName</code> and <code>Bio</code> can be cleared by sending an empty string
+              through a pointer field and handling that logic before the query builder runs.
+            </p>
+            <pre><code>func normalizeForm(form *AdminUserForm) {
+    if form.DisplayName != nil && *form.DisplayName == "" {
+        empty := ""
+        form.DisplayName = &empty
+    }
+}</code></pre>
+            <p>
+              The point is not to compress everything into one helper. The point is to keep the SQL
+              assembly boring and move intent handling into the request layer where it belongs.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Map-driven admin toggles</h2>
+            <pre><code>q := qq.Update("users").
+    SetMap(map[string]any{
+        "role":       "moderator",
+        "locked":     false,
+        "updated_at":  time.Now(),
+    }).
+    Where(quarry.Eq("id", form.ID)).
+    Returning("id", "role", "locked")</code></pre>
+            <p>
+              <code>SetMap</code> is handy when a form or admin tool already has stable keys and you
+              want the update builder to keep the SET order deterministic.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>What the SQL looks like</h2>
+            <pre><code>UPDATE users
+SET display_name = $1, email = $2, enabled = $3, team_id = $4
+WHERE id = $5
+RETURNING id, display_name, email, bio, enabled, team_id</code></pre>
+
+            <div class="callout warning">
+              <strong>Dialect note</strong>
+              The same handler can run on Postgres and SQLite. MySQL will still render the update,
+              but the RETURNING clause will fail clearly because the dialect does not support it.
+            </div>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the update contract, see
+              <a href="../../reference/core/">Core builders</a>,
+              <a href="../../reference/errors/">Errors</a>, and
+              <a href="../../reference/scan/">Scan</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

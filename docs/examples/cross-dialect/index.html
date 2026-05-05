@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Cross-dialect examples for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Cross-dialect notes - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="cross-dialect">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Cross Dialect Notes</h1>
+                <p class="lead">
+                  Quarry keeps the SQL shape familiar, but placeholders, quoting, and feature support
+                  still follow the configured dialect.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Placeholder output</h2>
+            <pre><code>q := qq.Select("id", "email").
+    From("users").
+    Where(quarry.Eq("status", "active"))</code></pre>
+            <table>
+              <thead>
+                <tr>
+                  <th>Dialect</th>
+                  <th>SQL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Postgres</td>
+                  <td><code>SELECT id, email FROM users WHERE status = $1</code></td>
+                </tr>
+                <tr>
+                  <td>MySQL</td>
+                  <td><code>SELECT id, email FROM users WHERE status = ?</code></td>
+                </tr>
+                <tr>
+                  <td>SQLite</td>
+                  <td><code>SELECT id, email FROM users WHERE status = ?</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <h2>Feature gates</h2>
+            <div class="columns">
+              <div class="card">
+                <h3>RETURNING</h3>
+                <p>
+                  Supported by Postgres and SQLite. On MySQL, the builder returns an unsupported
+                  feature error instead of pretending the syntax exists.
+                </p>
+              </div>
+              <div class="card">
+                <h3>ILIKE</h3>
+                <p>
+                  Native on Postgres. On the other supported dialects Quarry falls back to a
+                  LOWER/LIKE pattern so the query stays usable.
+                </p>
+              </div>
+              <div class="card">
+                <h3>ANY</h3>
+                <p>
+                  The <code>= ANY(...)</code> form is Postgres-only. The error is explicit on the
+                  other dialects so the caller can choose another shape.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Raw placeholder edge cases</h2>
+            <pre><code>q := qq.Select(quarry.Raw(
+    "json_extract(meta, '$.status') = ? AND note = 'literal ? stays put'",
+    "active",
+)).From("events")</code></pre>
+            <p>
+              The raw scanner skips quoted strings, comments, and dollar-quoted bodies before it
+              rewrites placeholders. That is the difference between a useful escape hatch and a
+              fragile text replacement.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Identifier quoting</h2>
+            <pre><code>users := quarry.T("users").As("u")
+q := qq.Select(users.Col("id"), users.Col("email")).From(users)</code></pre>
+            <p>
+              Tables quote with the dialect's identifier rules. MySQL uses backticks; Postgres and
+              SQLite use double quotes.
+            </p>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the full policy surface, see
+              <a href="../../reference/dialects/">Dialects</a> and
+              <a href="../../reference/errors/">Errors</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

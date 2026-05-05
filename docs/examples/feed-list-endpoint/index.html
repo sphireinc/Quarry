@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Feed/list endpoint example for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Feed/list endpoint - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="feed-list-endpoint">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Feed/List Endpoint</h1>
+                <p class="lead">
+                  A feed endpoint is just a list endpoint with stricter rules. Sort order must stay
+                  stable, cursor predicates must be explicit, and the handler should overfetch by one
+                  row so it can tell whether there is another page.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>The request and cursor</h2>
+            <pre><code>type FeedRequest struct {
+    TenantID int
+    Query    string
+    Topics   []string
+    Cursor   *FeedCursor
+}
+
+type FeedCursor struct {
+    CreatedAt time.Time
+    ID        int64
+}</code></pre>
+            <p>
+              Cursor pagination is opinionated on purpose. Use the same columns in the same order
+              every time or the feed will drift under load.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Build the feed query</h2>
+            <pre><code>func anySlice[T any](values []T) []any {
+    out := make([]any, 0, len(values))
+    for _, v := range values {
+        out = append(out, v)
+    }
+    return out
+}
+
+func BuildFeedQuery(qq *quarry.Quarry, req FeedRequest) quarry.SQLer {
+    q := qq.Select(
+        "id",
+        "title",
+        "excerpt",
+        "topic",
+        "created_at",
+    ).
+        From("posts").
+        Where(
+            quarry.Eq("tenant_id", req.TenantID),
+            quarry.OptionalILike("title", req.Query),
+            quarry.OptionalIn("topic", anySlice(req.Topics)...),
+        ).
+        OrderBy("created_at DESC", "id DESC").
+        Limit(21)
+
+    if req.Cursor != nil {
+        q = q.Where(quarry.Or(
+            quarry.Lt("created_at", req.Cursor.CreatedAt),
+            quarry.And(
+                quarry.Eq("created_at", req.Cursor.CreatedAt),
+                quarry.Lt("id", req.Cursor.ID),
+            ),
+        ))
+    }
+
+    return q
+}</code></pre>
+            <div class="callout info">
+              <strong>Why overfetch by one</strong>
+              Fetch 21 rows when the page size is 20. The extra row tells you whether there is a next
+              page without making a second query.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Hydrate the rows</h2>
+            <pre><code>type FeedItem struct {
+    ID        int64      `db:"id"`
+    Title     string     `db:"title"`
+    Excerpt   string     `db:"excerpt"`
+    Topic     string     `db:"topic"`
+    CreatedAt time.Time  `db:"created_at"`
+}</code></pre>
+            <pre><code>items, err := scan.All[FeedItem](ctx, db, BuildFeedQuery(qq, req))
+if err != nil {
+    return nil, nil, err
+}</code></pre>
+            <p>
+              The scan layer does not care that this is a feed. It just turns the rows into the
+              struct shape you asked for.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Trim the overfetch and build the next cursor</h2>
+            <pre><code>hasNext := len(items) == 21
+if hasNext {
+    items = items[:20]
+}
+
+var nextCursor *FeedCursor
+if hasNext && len(items) &gt; 0 {
+    last := items[len(items)-1]
+    nextCursor = &FeedCursor{
+        CreatedAt: last.CreatedAt,
+        ID:        last.ID,
+    }
+}</code></pre>
+            <p>
+              This is intentionally plain. The data flow is easier to understand when the feed logic
+              is obvious rather than hidden behind a helper that tries to be clever.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>What the SQL looks like</h2>
+            <pre><code>SELECT id, title, excerpt, topic, created_at
+FROM posts
+WHERE tenant_id = $1
+  AND (LOWER(title) LIKE LOWER($2) OR topic IN ($3, $4))
+  AND (
+    created_at &lt; $5
+    OR (created_at = $5 AND id &lt; $6)
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT 21</code></pre>
+
+            <div class="callout warning">
+              <strong>Keep the order stable</strong>
+              Cursor pagination only works if the sort keys are the same keys used by the cursor
+              filter. That is why the example keeps <code>created_at</code> and <code>id</code> paired.
+            </div>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the underlying query helpers, see
+              <a href="../../reference/core/">Core builders</a>,
+              <a href="../../reference/scan/">Scan</a>, and
+              <a href="../../reference/errors/">Errors</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

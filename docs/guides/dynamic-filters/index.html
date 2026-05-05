@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Dynamic filters in Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Dynamic filters - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="dynamic-filters">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Guide</div>
+                <h1>Dynamic Filters</h1>
+                <p class="lead">
+                  Quarry optional predicates disappear when their values are absent, so one query
+                  can handle many request shapes without special-case branching.
+                </p>
+                <div class="hero-actions">
+                  <a class="link-button primary-button" href="https://github.com/sphireinc/Quarry/blob/main/README.md">See the README</a>
+                  <a class="link-button" href="../../reference/core/">Core reference</a>
+                </div>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Optional filters</h2>
+            <p>
+              Optional helpers treat empty inputs as omissions. That keeps the query shape stable
+              while letting callers pass zero values, nil pointers, or empty slices.
+            </p>
+            <div class="tab-group" data-tabs>
+              <div class="tab-list">
+                <button class="tab-button" type="button" data-tab-button="off">Omitted</button>
+                <button class="tab-button" type="button" data-tab-button="on">Included</button>
+              </div>
+              <div class="tab-panel" data-tab-panel="off">
+                <pre><code>q := qq.Select("*").From("users").Where(
+    quarry.Eq("tenant_id", 42),
+    quarry.OptionalEq("status", nil),
+    quarry.OptionalILike("email", ""),
+)</code></pre>
+                <pre><code>SELECT * FROM users WHERE tenant_id = $1
+[]any{42}</code></pre>
+              </div>
+              <div class="tab-panel" data-tab-panel="on">
+                <pre><code>status := "active"
+q := qq.Select("*").From("users").Where(
+    quarry.Eq("tenant_id", 42),
+    quarry.OptionalEq("status", &status),
+    quarry.OptionalILike("email", "%bob%"),
+)</code></pre>
+                <pre><code>SELECT * FROM users WHERE tenant_id = $1 AND status = $2 AND email ILIKE $3
+[]any{42, "active", "%bob%"}</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Grouped predicates</h2>
+            <pre><code>q := qq.Select("*").From("users").Where(
+    quarry.Eq("tenant_id", 42),
+    quarry.Or(
+        quarry.OptionalILike("email", "%bob%"),
+        quarry.OptionalILike("name", "%bob%"),
+    ),
+    quarry.OptionalEq("status", nil),
+)</code></pre>
+            <div class="callout info">
+              <strong>Grouping rule</strong>
+              Empty children disappear. Nested single-child groups collapse. Nested multi-child groups
+              keep parentheses for correctness.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Sorting and paging</h2>
+            <div class="columns">
+              <div class="card">
+                <h3>Safe sorting</h3>
+                <p>
+                  <code>OrderBySafe</code> and <code>OrderBySafeDefault</code> only accept fragments
+                  from a trusted lookup table.
+                </p>
+              </div>
+              <div class="card">
+                <h3>Paging helpers</h3>
+                <p>
+                  <code>Page</code>, <code>LimitDefault</code>, and <code>OffsetDefault</code>
+                  keep request pagination readable.
+                </p>
+              </div>
+            </div>
+            <pre><code>q := qq.Select("id", "email").
+    From("users").
+    OrderBySafeDefault("newest", quarry.SortMap{
+        "newest": "created_at DESC",
+        "email":  "email ASC",
+    }, "newest").
+    Page(1, 50)</code></pre>
+          </section>
+
+          <section class="section">
+            <h2>Partial updates</h2>
+            <pre><code>q := qq.Update("users").
+    SetOptional("name", params.Name).
+    SetOptional("email", params.Email).
+    SetIf(params.Enabled != nil, "enabled", *params.Enabled).
+    Where(quarry.Eq("id", params.ID))</code></pre>
+            <div class="callout warning">
+              <strong>Truthful behavior</strong>
+              If every SET value disappears, the builder returns an error instead of rendering invalid SQL.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Raw SQL escape hatch</h2>
+            <p>
+              Raw SQL stays available when the query is clearer by hand. Values still bind safely.
+            </p>
+            <pre><code>q := qq.Select(quarry.Raw("COUNT(*) FILTER (WHERE status = ?)", "active")).
+    From("users").
+    Where(quarry.Raw("created_at >= ?", since))</code></pre>
+          </section>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

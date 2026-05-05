@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Error reference for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Errors - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="errors">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Reference</div>
+                <h1>Error Returns</h1>
+                <p class="lead">
+                  The public error surface is intentionally small. Quarry wraps failures with
+                  context, but the important cases still support <code>errors.Is</code>.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Sentinel errors</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Error</th>
+                  <th>What it means</th>
+                  <th>Common source</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>quarry.ErrInvalidIdentifier</code></td>
+                  <td>An identifier failed the local syntax check.</td>
+                  <td><code>quarry.T</code>, <code>quarry.C</code>, aliases, and dialect quoting.</td>
+                </tr>
+                <tr>
+                  <td><code>quarry.ErrUnsupportedFeature</code></td>
+                  <td>The active dialect cannot render a requested feature.</td>
+                  <td><code>RETURNING</code> on MySQL, <code>ANY</code> outside Postgres, unsupported dialects.</td>
+                </tr>
+                <tr>
+                  <td><code>quarry.ErrInvalidBuilderState</code></td>
+                  <td>The builder configuration is incomplete or contradictory.</td>
+                  <td>Zero-value builders, nil subqueries, empty SET lists, invalid comparisons.</td>
+                </tr>
+                <tr>
+                  <td><code>quarry.ErrPlaceholderMismatch</code></td>
+                  <td>The raw SQL placeholder scan could not match args to placeholders.</td>
+                  <td>Too few args, too many args, or invalid placeholder binding in raw queries.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <h2>How to check</h2>
+            <pre><code>sql, _, err := q.ToSQL()
+if err != nil {
+    if errors.Is(err, quarry.ErrUnsupportedFeature) {
+        // fall back or fail fast
+    }
+}</code></pre>
+          </section>
+
+          <section class="section">
+            <h2>Design rules</h2>
+            <ul class="feature-list">
+              <li>Quarry prefers wrapped errors with context over silent fallback behavior.</li>
+              <li>These sentinel values are meant to stay consistent so callers and tests can check them directly.</li>
+              <li>Normal usage should return an error instead of panicking.</li>
+            </ul>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              See
+              <a href="https://github.com/sphireinc/Quarry/blob/main/quarry.go">quarry.go</a>,
+              <a href="https://github.com/sphireinc/Quarry/blob/main/sqlbuilder.go">sqlbuilder.go</a>,
+              and
+              <a href="https://github.com/sphireinc/Quarry/blob/main/expr.go">expr.go</a>
+              for the implementation.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

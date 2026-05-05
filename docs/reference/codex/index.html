@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Codex reference for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Codex - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="codex">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Reference</div>
+                <h1>Codex and Recipes</h1>
+                <p class="lead">
+                  Store raw SQL templates, bind parameters safely, or register typed recipes for
+                  repeated Quarry builders.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Raw stored queries</h2>
+            <pre><code>cx := codex.New()
+
+if err := cx.AddRawNamed("users.by_id", `
+    SELECT id, email
+    FROM users
+    WHERE id = :id
+`); err != nil {
+    panic(err)
+}</code></pre>
+            <pre><code>q := cx.MustRaw("users.by_id").With(qq).BindMap(map[string]any{
+    "id": 10,
+})
+
+sql, args, err := q.ToSQL()</code></pre>
+            <div class="callout info">
+              <strong>Behavior</strong>
+              Named raw SQL still follows the active dialect. PostgreSQL gets <code>$1</code>, MySQL
+              and SQLite get <code>?</code>.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Recipes</h2>
+            <div class="tab-group" data-tabs>
+              <div class="tab-list">
+                <button class="tab-button" type="button" data-tab-button="def">Define</button>
+                <button class="tab-button" type="button" data-tab-button="use">Use</button>
+              </div>
+              <div class="tab-panel" data-tab-panel="def">
+                <pre><code>type UserSearchParams struct {
+    Search string
+    Status *string
+}
+
+recipe := codex.NewRecipe(func(qq *quarry.Quarry, p UserSearchParams) quarry.SQLer {
+    return qq.Select("id", "email").
+        From("users").
+        Where(
+            quarry.OptionalILike("email", p.Search),
+            quarry.OptionalEq("status", p.Status),
+        )
+})</code></pre>
+              </div>
+              <div class="tab-panel" data-tab-panel="use">
+                <pre><code>q, err := recipe.Build(qq, UserSearchParams{
+    Search: "%bob%",
+})
+if err != nil {
+    panic(err)
+}</code></pre>
+              </div>
+            </div>
+            <div class="callout warning">
+              <strong>Truthful contract</strong>
+              Recipe builds return <code>(quarry.SQLer, error)</code>. The API prefers errors over panic
+              in normal use.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Registry helpers</h2>
+            <div class="columns">
+              <div class="card">
+                <h3>Validation</h3>
+                <p>Query names are validated, duplicates are rejected, and the store stays deterministic.</p>
+              </div>
+              <div class="card">
+                <h3>Strict mode</h3>
+                <p>Named queries can reject unused parameters when you want tighter review discipline.</p>
+              </div>
+              <div class="card">
+                <h3>Bindings</h3>
+                <p>Bind by map, struct, or typed recipe parameter depending on the use case.</p>
+              </div>
+            </div>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the current implementation details, see
+              <a href="https://github.com/sphireinc/Quarry/blob/main/INTEGRATION.md">INTEGRATION.md</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

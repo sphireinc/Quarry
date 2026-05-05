@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Core Quarry builder reference." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Core builders - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="core">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Reference</div>
+                <h1>Core Builders and Predicates</h1>
+                <p class="lead">
+                  The root package stays focused on SQL composition: builders, identifiers,
+                  predicates, raw fragments, and dialect policy.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Builders</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Builder</th>
+                  <th>Use it for</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>qq.Select(...)</code></td>
+                  <td>Render SELECT queries.</td>
+                  <td>Supports joins, grouping, having, ordering, pagination, prefixes, and suffixes.</td>
+                </tr>
+                <tr>
+                  <td><code>qq.InsertInto(...)</code></td>
+                  <td>Render INSERT queries.</td>
+                  <td>Supports multi-row values, maps, and RETURNING where the dialect allows it.</td>
+                </tr>
+                <tr>
+                  <td><code>qq.Update(...)</code></td>
+                  <td>Render UPDATE queries.</td>
+                  <td>Supports Set, SetMap, SetIf, SetOptional, WHERE, and RETURNING.</td>
+                </tr>
+                <tr>
+                  <td><code>qq.DeleteFrom(...)</code></td>
+                  <td>Render DELETE queries.</td>
+                  <td>Supports WHERE, prefixes, suffixes, and RETURNING where supported.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <h2>Safe identifiers</h2>
+            <p>
+              Use <code>quarry.T</code>, <code>quarry.C</code>, and the
+              <a href="../identifiers/">identifier helpers page</a> when you want Quarry to quote
+              identifiers safely.
+            </p>
+            <pre><code>users := quarry.T("users").As("u")
+q := qq.Select(users.Col("id"), users.Col("email")).
+    From(users)</code></pre>
+          </section>
+
+          <section class="section">
+            <h2>Predicates</h2>
+            <div class="columns">
+              <div class="card">
+                <h3>Comparison</h3>
+                <p>
+                  <code>Eq</code>, <code>Neq</code>, <code>Gt</code>, <code>Gte</code>,
+                  <code>Lt</code>, and <code>Lte</code>.
+                </p>
+              </div>
+              <div class="card">
+                <h3>Membership</h3>
+                <p><code>In</code>, <code>NotIn</code>, <code>TupleIn</code>, and <code>Any</code>.</p>
+              </div>
+              <div class="card">
+                <h3>Grouping</h3>
+                <p><code>And</code>, <code>Or</code>, and <code>Not</code> compose nested boolean logic.</p>
+              </div>
+              <div class="card">
+                <h3>Existence</h3>
+                <p><code>Exists</code> and <code>NotExists</code> wrap subqueries safely.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Truthful errors</h2>
+            <ul class="feature-list">
+              <li>Nil and invalid builders return errors from <code>ToSQL</code>.</li>
+              <li>
+                Unsupported dialect features, placeholder mismatches, and builder-state failures
+                are documented in the errors reference page.
+              </li>
+              <li>The implementation uses wrapped sentinels so tests can rely on <code>errors.Is</code>.</li>
+            </ul>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              Compare the code to
+              <a href="https://github.com/sphireinc/Quarry/blob/main/README.md">README.md</a> and
+              <a href="https://github.com/sphireinc/Quarry/blob/main/docs/status.md">docs/status.md</a>
+              for the current truth.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Dialect policy reference for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Dialects - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="dialects">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Reference</div>
+                <h1>Database Dialects</h1>
+                <p class="lead">
+                  Quarry keeps placeholder rendering, quoting, and feature support on the configured
+                  dialect so output stays predictable.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Placeholder matrix</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Dialect</th>
+                  <th>Placeholder style</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Postgres</td>
+                  <td><code>$1</code>, <code>$2</code>, ...</td>
+                  <td>Supports positional numbering and nested subquery offsetting.</td>
+                </tr>
+                <tr>
+                  <td>MySQL</td>
+                  <td><code>?</code></td>
+                  <td>Uses question marks for values and backticks for identifiers.</td>
+                </tr>
+                <tr>
+                  <td>SQLite</td>
+                  <td><code>?</code></td>
+                  <td>Uses question marks for values and double quotes for identifiers.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <h2>Feature policy</h2>
+            <div class="columns">
+              <div class="card">
+                <h3>RETURNING</h3>
+                <p>Supported by Postgres and SQLite. MySQL returns a clear unsupported-feature error.</p>
+              </div>
+              <div class="card">
+                <h3>ILIKE</h3>
+                <p>Native on Postgres, with a LOWER/LIKE fallback on MySQL and SQLite.</p>
+              </div>
+              <div class="card">
+                <h3>ANY</h3>
+                <p>Postgres only. Other dialects return a wrapped unsupported-feature error.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Quoting</h2>
+            <p>
+              Use the <a href="../identifiers/">identifier helpers page</a> when you want Quarry
+              to quote and validate names instead of treating them as raw SQL.
+            </p>
+            <pre><code>users := quarry.T("users").As("u")
+q := qq.Select(users.Col("id"), users.Col("email")).From(users)</code></pre>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              The tests in
+              <a href="https://github.com/sphireinc/Quarry/blob/main/quarry_test.go">quarry_test.go</a>
+              and
+              <a href="https://github.com/sphireinc/Quarry/blob/main/golden_test.go">golden_test.go</a>
+              lock this behavior down. The matching error contract lives in the
+              <a href="../errors/">errors reference</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

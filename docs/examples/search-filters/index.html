@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Search and filter examples for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Search and filters - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="search-filters">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Search and Filter Examples</h1>
+                <p class="lead">
+                  This is the shape you reach for when a page has half a dozen optional inputs:
+                  text search, facet filters, safe sort keys, and pagination that should not change
+                  the query into a string puzzle.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Directory search</h2>
+            <pre><code>type EmployeeSearch struct {
+    TenantID   int
+    Query      string
+    Departments []string
+    Status     *string
+    Sort       string
+    Page       int
+    PerPage    int
+}
+
+func anySlice[T any](values []T) []any {
+    out := make([]any, 0, len(values))
+    for _, v := range values {
+        out = append(out, v)
+    }
+    return out
+}
+
+func BuildEmployeeSearch(qq *quarry.Quarry, req EmployeeSearch) quarry.SQLer {
+    return qq.Select(
+        "id", "email", "department", "status", "created_at",
+    ).
+        From("employees").
+        Where(
+            quarry.Eq("tenant_id", req.TenantID),
+            quarry.Or(
+                quarry.OptionalILike("email", req.Query),
+                quarry.OptionalILike("name", req.Query),
+            ),
+            quarry.OptionalEq("status", req.Status),
+            quarry.OptionalIn("department", anySlice(req.Departments)...),
+        ).
+        OrderBySafeDefault(req.Sort, quarry.SortMap{
+            "newest": "created_at DESC",
+            "email":  "email ASC",
+            "name":   "name ASC",
+        }, "newest").
+        Page(req.Page, req.PerPage)
+}</code></pre>
+            <div class="callout info">
+              <strong>Why this shape works</strong>
+              Empty strings, nil pointers, and empty slices disappear. The query stays stable, and
+              the SQL text only changes where the user actually supplied something.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Facet filters and ranges</h2>
+            <pre><code>type TicketSearch struct {
+    TenantID   int
+    Owners     []int
+    CreatedMin  *time.Time
+    CreatedMax  *time.Time
+    Escalated  *bool
+}
+
+q := qq.Select("id", "subject", "owner_id", "created_at").
+    From("tickets").
+    Where(
+        quarry.Eq("tenant_id", req.TenantID),
+        quarry.OptionalIn("owner_id", anySlice(req.Owners)...),
+        quarry.WhereIf(req.CreatedMin != nil && req.CreatedMax != nil,
+            quarry.Between("created_at", *req.CreatedMin, *req.CreatedMax),
+        ),
+        quarry.OptionalEq("escalated", req.Escalated),
+    )</code></pre>
+
+            <pre><code>SELECT id, subject, owner_id, created_at
+FROM tickets
+WHERE tenant_id = $1
+  AND owner_id IN ($2, $3, $4)
+  AND created_at BETWEEN $5 AND $6</code></pre>
+          </section>
+
+          <section class="section">
+            <h2>Composite matching</h2>
+            <p>
+              When a search UI is really looking for a set of known combinations, <code>TupleIn</code>
+              keeps the intent obvious.
+            </p>
+            <pre><code>q := qq.Select("account_id", "user_id", "role").
+    From("account_memberships").
+    Where(quarry.TupleIn([]any{
+        quarry.C("account_id"),
+        quarry.C("user_id"),
+    }, [][]any{
+        {42, 9},
+        {42, 11},
+        {42, 19},
+    }))</code></pre>
+            <div class="callout warning">
+              <strong>Use it for sets, not everything</strong>
+              Tuple predicates are handy when the combinations are known and finite. If the filter is
+              really free-form, keep using the simpler optional predicates.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>What the SQL looks like</h2>
+            <pre><code>SELECT id, email, department, status, created_at
+FROM employees
+WHERE tenant_id = $1
+  AND (LOWER(email) LIKE LOWER($2) OR LOWER(name) LIKE LOWER($3))
+  AND status = $4
+ORDER BY created_at DESC
+LIMIT 50 OFFSET 0</code></pre>
+            <p>
+              The important part is not the exact values. It is that each optional clause appears or
+              disappears without changing the rest of the builder.
+            </p>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the smaller API surface, see
+              <a href="../../reference/core/">Core builders</a> and
+              <a href="../../reference/identifiers/">Identifiers</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

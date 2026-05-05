@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta
+      name="description"
+      content="Quarry docs: a polished guide to SQL-shaped Go, dynamic builders, scanning, and codex recipes."
+    />
+    <meta property="og:title" content="Quarry Docs" />
+    <meta
+      property="og:description"
+      content="Write SQL-shaped Go. Compose filters safely. Bind args predictably."
+    />
+    <meta property="og:image" content="assets/social.png" />
+    <link rel="icon" href="assets/working_logo.png" />
+    <link rel="stylesheet" href="assets/site.css" />
+    <title>Quarry Docs</title>
+    <script defer src="assets/site.js"></script>
+  </head>
+  <body data-page="home">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="./" aria-label="Quarry docs home">
+          <img src="assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input
+            data-docs-search
+            type="search"
+            placeholder="Search docs"
+            aria-label="Search the docs"
+          />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav>
+          <div class="nav-section">
+            <h2>Start here</h2>
+            <div class="nav-list">
+              <a class="nav-link" href="./" aria-current="page">
+                <strong>Overview</strong>
+                <span>What Quarry is and why it exists.</span>
+              </a>
+              <a class="nav-link" href="get-started/">
+                <strong>Get started</strong>
+                <span>Install Quarry and write your first query.</span>
+              </a>
+            </div>
+          </div>
+          <div class="nav-section">
+            <h2>Guides</h2>
+            <div class="nav-list">
+              <a class="nav-link" href="guides/dynamic-filters/">
+                <strong>Dynamic filters</strong>
+                <span>Optional predicates, sorting, and pagination.</span>
+              </a>
+            </div>
+          </div>
+          <div class="nav-section">
+            <h2>Reference</h2>
+            <div class="nav-list">
+              <a class="nav-link" href="reference/core/">
+                <strong>Core builders</strong>
+                <span>Select, Insert, Update, and Delete.</span>
+              </a>
+              <a class="nav-link" href="reference/codex/">
+                <strong>Codex</strong>
+                <span>Reusable raw queries and recipes.</span>
+              </a>
+              <a class="nav-link" href="reference/scan/">
+                <strong>Scan</strong>
+                <span>database/sql execution and hydration helpers.</span>
+              </a>
+              <a class="nav-link" href="reference/dialects/">
+                <strong>Dialects</strong>
+                <span>Placeholder, quoting, and feature policy.</span>
+              </a>
+            </div>
+          </div>
+          <div class="nav-section">
+            <h2>Examples</h2>
+            <div class="nav-list">
+              <a class="nav-link" href="examples/">
+                <strong>Examples overview</strong>
+                <span>What the example pages cover.</span>
+              </a>
+              <a class="nav-link" href="examples/search-endpoint/">
+                <strong>Search endpoint</strong>
+                <span>Optional filters, sort keys, pagination.</span>
+              </a>
+              <a class="nav-link" href="examples/admin-edit-form/">
+                <strong>Admin edit form</strong>
+                <span>Patch updates with returning rows.</span>
+              </a>
+              <a class="nav-link" href="examples/reporting-query/">
+                <strong>Reporting query</strong>
+                <span>Aggregates, joins, and raw fragments.</span>
+              </a>
+              <a class="nav-link" href="examples/feed-list-endpoint/">
+                <strong>Feed/list endpoint</strong>
+                <span>Cursor-style feeds and scan-friendly rows.</span>
+              </a>
+              <a class="nav-link" href="examples/search-filters/">
+                <strong>Search and filters</strong>
+                <span>Reusable filter-heavy query shapes.</span>
+              </a>
+              <a class="nav-link" href="examples/patch-updates/">
+                <strong>Patch updates</strong>
+                <span>Update rows without brittle branch logic.</span>
+              </a>
+              <a class="nav-link" href="examples/raw-recipes/">
+                <strong>Raw SQL and recipes</strong>
+                <span>Escape hatches and reusable queries.</span>
+              </a>
+              <a class="nav-link" href="examples/scanning/">
+                <strong>Scanning</strong>
+                <span>Hydrate results without an ORM.</span>
+              </a>
+              <a class="nav-link" href="examples/cross-dialect/">
+                <strong>Cross-dialect notes</strong>
+                <span>What changes across Postgres, MySQL, SQLite.</span>
+              </a>
+            </div>
+          </div>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">SQL Composition Kit for Go</div>
+                <h1>Write SQL-shaped Go without giving up control.</h1>
+                <p class="lead">
+                  Quarry helps you compose explicit SQL with safe identifiers, dialect-aware
+                  placeholders, dynamic filters, scanning helpers, and reusable query recipes.
+                  It keeps SQL visible while making the brittle parts boring.
+                </p>
+                <div class="hero-actions">
+                  <a class="link-button primary-button" href="get-started/">Get started</a>
+                  <a class="link-button" href="reference/core/">Browse the core API</a>
+                </div>
+              </div>
+              <div class="hero-card">
+                <img src="assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>What Quarry is for</h2>
+            <div class="card-grid">
+              <div class="card">
+                <h3>Explicit SQL building</h3>
+                <p>Compose SELECT, INSERT, UPDATE, and DELETE statements without hiding the query.</p>
+              </div>
+              <div class="card">
+                <h3>Dynamic filters</h3>
+                <p>Optional predicates drop away cleanly, so search forms stay readable and deterministic.</p>
+              </div>
+              <div class="card">
+                <h3>Dialect policy</h3>
+                <p>Placeholders, identifier quoting, returning support, and ILIKE behavior all follow the chosen dialect.</p>
+              </div>
+              <div class="card">
+                <h3>Optional orbiting packages</h3>
+                <p>Scanning and reusable codex recipes sit beside the core builder instead of inside it.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Quick query</h2>
+            <p>Quarry starts with a configured dialect and a query that still looks like SQL.</p>
+            <div class="tab-group" data-tabs>
+              <div class="tab-list">
+                <button class="tab-button" type="button" data-tab-button="code">Go</button>
+                <button class="tab-button" type="button" data-tab-button="sql">SQL</button>
+              </div>
+              <div class="tab-panel" data-tab-panel="code">
+                <pre><code>qq := quarry.New(quarry.Postgres)
+
+q := qq.Select("id", "email").
+    From("users").
+    Where(quarry.Eq("status", "active"))
+
+sql, args, err := q.ToSQL()</code></pre>
+              </div>
+              <div class="tab-panel" data-tab-panel="sql">
+                <pre><code>SELECT id, email FROM users WHERE status = $1
+[]any{"active"}</code></pre>
+              </div>
+            </div>
+            <div class="callout info">
+              <strong>Core principle</strong>
+              Every query still renders to <code>sql, args, err</code>. That keeps tests and review simple.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Where to go next</h2>
+            <div class="columns">
+              <div class="card">
+                <h3>Get started</h3>
+                <p>Install Quarry, build your first query, and learn how dialects shape output.</p>
+                <a class="note-link" href="get-started/">Read the walkthrough →</a>
+              </div>
+              <div class="card">
+                <h3>Dynamic filters</h3>
+                <p>See how optional predicates, safe ordering, and pagination behave together.</p>
+                <a class="note-link" href="guides/dynamic-filters/">Open the guide →</a>
+              </div>
+              <div class="card">
+                <h3>Codex and Scan</h3>
+                <p>Use reusable raw queries, recipes, and hydration helpers when the query surface gets larger.</p>
+                <a class="note-link" href="reference/codex/">Explore Codex →</a>
+              </div>
+              <div class="card">
+                <h3>Examples</h3>
+                <p>Read longer, practical walkthroughs for filters, patches, raw SQL, scanning, and dialect differences.</p>
+                <a class="note-link" href="examples/">Browse the examples →</a>
+              </div>
+            </div>
+          </section>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

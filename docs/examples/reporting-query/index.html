@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Reporting query example for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Reporting query - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="reporting-query">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Reporting Query</h1>
+                <p class="lead">
+                  Reporting queries are where people usually reach for raw SQL. Quarry still fits:
+                  joins stay visible, aggregates stay explicit, and the few vendor-specific pieces can
+                  be isolated instead of spread through the codebase.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>The report shape</h2>
+            <pre><code>type DailySalesRow struct {
+    Day         time.Time `db:"day"`
+    Orders      int64     `db:"orders"`
+    PaidOrders  int64     `db:"paid_orders"`
+    RevenueCents int64    `db:"revenue_cents"`
+}</code></pre>
+            <p>
+              This report is intentionally Postgres-leaning in one place so the shape stays easy to
+              read. The rest is normal Quarry builder code.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Build the report</h2>
+            <pre><code>func DailySalesReport(qq *quarry.Quarry, start, end time.Time) quarry.SQLer {
+    return qq.Select(
+        quarry.Raw("DATE_TRUNC('day', o.created_at) AS day"),
+        quarry.Raw("COUNT(*) AS orders"),
+        quarry.Raw("SUM(CASE WHEN o.status = ? THEN 1 ELSE 0 END) AS paid_orders", "paid"),
+        quarry.Raw("SUM(o.total_cents) AS revenue_cents"),
+    ).
+        From("orders o").
+        LeftJoin("order_items i ON i.order_id = o.id").
+        Where(
+            quarry.Gte("o.created_at", start),
+            quarry.Lt("o.created_at", end),
+            quarry.IsNull("o.deleted_at"),
+        ).
+        GroupBy(quarry.Raw("DATE_TRUNC('day', o.created_at)")).
+        Having(quarry.Gt(quarry.Raw("COUNT(*)"), 0)).
+        OrderBy("day ASC")
+}</code></pre>
+            <div class="callout info">
+              <strong>Why the raw fragments are here</strong>
+              Quarry is not trying to outsmart a reporting query. The point is to keep the rest of the
+              statement structured while leaving the obviously vendor-specific bits in plain view.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Wrap it in a recipe</h2>
+            <pre><code>type ReportWindow struct {
+    Start time.Time
+    End   time.Time
+}
+
+reportRecipe := codex.NewRecipe(func(qq *quarry.Quarry, window ReportWindow) quarry.SQLer {
+    return DailySalesReport(qq, window.Start, window.End)
+})</code></pre>
+            <p>
+              A recipe is useful when the dashboard, the CSV export, and the admin preview all need
+              the same statement. The SQL stays in one place; the callers just pass the time window.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Run the report</h2>
+            <pre><code>rows, err := scan.All[DailySalesRow](ctx, db,
+    DailySalesReport(qq, start, end),
+)
+if err != nil {
+    return err
+}</code></pre>
+            <p>
+              If the report should only show one row per day, the scan layer stays out of the way. It
+              just hydrates the result set into the struct you asked for.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>What the SQL looks like</h2>
+            <pre><code>SELECT DATE_TRUNC('day', o.created_at) AS day,
+       COUNT(*) AS orders,
+       SUM(CASE WHEN o.status = $1 THEN 1 ELSE 0 END) AS paid_orders,
+       SUM(o.total_cents) AS revenue_cents
+FROM orders o
+LEFT JOIN order_items i ON i.order_id = o.id
+WHERE o.created_at &gt;= $2
+  AND o.created_at &lt; $3
+GROUP BY DATE_TRUNC('day', o.created_at)
+HAVING COUNT(*) &gt; $4
+ORDER BY day ASC</code></pre>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the reusable query layer, see
+              <a href="../../reference/codex/">Codex</a> and
+              <a href="../../reference/errors/">Errors</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

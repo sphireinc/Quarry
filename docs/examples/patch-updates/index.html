@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Patch update examples for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Patch updates - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="patch-updates">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Patch/Update Examples</h1>
+                <p class="lead">
+                  A patch endpoint usually needs three things: ignore missing fields, preserve
+                  explicit zero values, and return the row that actually changed. Quarry keeps those
+                  cases explicit instead of hiding them in string concatenation.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Profile patch endpoint</h2>
+            <pre><code>type ProfilePatch struct {
+    ID          int
+    DisplayName *string
+    Email       *string
+    Bio         *string
+    Enabled     *bool
+}
+
+q := qq.Update("profiles").
+    SetOptional("display_name", patch.DisplayName).
+    SetOptional("email", patch.Email).
+    SetOptional("bio", patch.Bio).
+    SetIf(patch.Enabled != nil, "enabled", *patch.Enabled).
+    Where(quarry.Eq("id", patch.ID)).
+    Returning("id", "display_name", "email", "bio", "enabled")</code></pre>
+
+            <div class="callout info">
+              <strong>Why SetOptional matters</strong>
+              A nil pointer means “do not touch this field.” A pointer to an empty string still
+              becomes a real update if that is what the caller asked for.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Map-driven changes</h2>
+            <p>
+              Sometimes the fields come from a map that already has stable keys. <code>SetMap</code>
+              keeps the column order deterministic, so review diffs stay readable.
+            </p>
+            <pre><code>changes := map[string]any{
+    "display_name": "Alice Wu",
+    "timezone":     "UTC",
+    "theme":        "dark",
+}
+
+q := qq.Update("profiles").
+    SetMap(changes).
+    Where(quarry.Eq("id", 42))</code></pre>
+
+            <pre><code>UPDATE profiles
+SET display_name = $1, theme = $2, timezone = $3
+WHERE id = $4</code></pre>
+          </section>
+
+          <section class="section">
+            <h2>Returning the changed row</h2>
+            <pre><code>updated, err := scan.One[Profile](ctx, db,
+    qq.Update("profiles").
+        SetOptional("bio", patch.Bio).
+        SetIf(patch.Enabled != nil, "enabled", *patch.Enabled).
+        Where(quarry.Eq("id", patch.ID)).
+        Returning("id", "display_name", "email", "bio", "enabled"),
+)</code></pre>
+            <div class="callout warning">
+              <strong>Dialect note</strong>
+              Postgres and SQLite can return rows directly. MySQL does not, so the builder returns a
+              clear unsupported-feature error instead of pretending otherwise.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Bulk writes and soft deletes</h2>
+            <div class="stacked-cards">
+              <div class="card">
+                <h3>Bulk insert</h3>
+                <pre><code>q := qq.InsertInto("audit_log").
+    Columns("actor_id", "action", "created_at").
+    Rows(
+        []any{42, "profile.updated", time.Now()},
+        []any{42, "profile.viewed", time.Now()},
+    )</code></pre>
+              </div>
+              <div class="card">
+                <h3>Soft delete</h3>
+                <pre><code>q := qq.Update("profiles").
+    Set("deleted_at", time.Now()).
+    SetOptional("deleted_reason", patch.Reason).
+    Where(quarry.Eq("id", patch.ID))</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the update builder contract, see
+              <a href="../../reference/core/">Core builders</a> and
+              <a href="../../reference/errors/">Errors</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

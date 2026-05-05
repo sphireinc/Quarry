@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Practical Quarry examples." />
+    <link rel="icon" href="../assets/working_logo.png" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <title>Examples - Quarry Docs</title>
+    <script defer src="../assets/site.js"></script>
+  </head>
+  <body data-page="examples">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../" aria-label="Quarry docs home">
+          <img src="../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Examples</div>
+                <h1>Practical Patterns</h1>
+                <p class="lead">
+                  The first four pages are app-shaped walkthroughs. They show the parts of Quarry
+                  that are easy to miss at first: filter-heavy queries, patch-style updates, raw
+                  SQL with guardrails, scanning, and the places where dialect behavior actually
+                  changes the result.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Walkthroughs</h2>
+            <div class="card-grid">
+              <div class="card">
+                <h3><a href="search-endpoint/">Search endpoint</a></h3>
+                <p>
+                  A request-driven list endpoint with optional filters, safe ordering, and
+                  pagination.
+              </p>
+              </div>
+              <div class="card">
+                <h3><a href="admin-edit-form/">Admin edit form</a></h3>
+                <p>
+                  A form-driven edit flow that keeps partial updates, returning, and validation
+                  explicit.
+              </p>
+              </div>
+              <div class="card">
+                <h3><a href="reporting-query/">Reporting query</a></h3>
+                <p>
+                  A heavier query with aggregates, joins, and a raw fragment where the SQL is still
+                  the clearest expression.
+              </p>
+              </div>
+              <div class="card">
+                <h3><a href="feed-list-endpoint/">Feed/list endpoint</a></h3>
+                <p>
+                  A content-feed query that combines cursor-style pagination, optional filters, and
+                  scan-friendly result shaping.
+              </p>
+              </div>
+              <div class="card">
+                <h3><a href="search-filters/">Search and filters</a></h3>
+                <p>
+                  The older filter-heavy walkthrough, kept around as a reference for reusable query
+                  shapes.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>How to read these pages</h2>
+            <ul class="feature-list">
+              <li>Start with the walkthrough that matches the shape of the endpoint or job you are building.</li>
+              <li>Use the longer examples when you want to see edge cases and SQL output together.</li>
+              <li>Keep the query shape, then swap in your own schema and request types.</li>
+              <li>Trim the pattern to fit your app after you understand the tradeoffs it is showing.</li>
+            </ul>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              The example pages are intentionally long-form. If you want the compact API contract,
+              see <a href="../reference/core/">Core builders</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

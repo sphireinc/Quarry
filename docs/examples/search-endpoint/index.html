@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Search endpoint example for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Search endpoint - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="search-endpoint">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Search Endpoint</h1>
+                <p class="lead">
+                  This is the endpoint shape most teams ship first: a list page with optional text
+                  search, a few facet filters, safe sort keys, and a count query beside the results
+                  query.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>The request shape</h2>
+            <pre><code>type UserSearchRequest struct {
+    TenantID int
+    Query    string
+    Status   *string
+    Roles    []string
+    Sort     string
+    Page     int
+    PerPage  int
+}</code></pre>
+            <p>
+              The request keeps user intent separate from SQL concerns. Empty search text should
+              disappear. Sort keys should be chosen from a lookup table. Pagination should never be
+              hand-built by string concatenation.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Build the list query</h2>
+            <pre><code>func BuildUserSearch(qq *quarry.Quarry, req UserSearchRequest) quarry.SQLer {
+    return qq.Select(
+        "id",
+        "email",
+        "display_name",
+        "status",
+        "created_at",
+    ).
+        From("users").
+        Where(
+            quarry.Eq("tenant_id", req.TenantID),
+            quarry.Or(
+                quarry.OptionalILike("email", req.Query),
+                quarry.OptionalILike("display_name", req.Query),
+            ),
+            quarry.OptionalEq("status", req.Status),
+            quarry.OptionalIn("role", anySlice(req.Roles)...),
+        ).
+        OrderBySafeDefault(req.Sort, quarry.SortMap{
+            "newest": "created_at DESC",
+            "alpha":  "display_name ASC",
+            "email":  "email ASC",
+        }, "newest").
+        Page(req.Page, req.PerPage)
+}</code></pre>
+            <div class="callout info">
+              <strong>Why this stays readable</strong>
+              Each optional helper disappears when it should. The caller does not need to build a
+              string list, manage commas, or special-case blank values.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Count and list together</h2>
+            <pre><code>func SearchUsers(ctx context.Context, db scan.Queryer, qq *quarry.Quarry, req UserSearchRequest) ([]UserRow, int64, error) {
+    base := qq.Select("id", "email", "display_name", "status", "created_at").
+        From("users").
+        Where(
+            quarry.Eq("tenant_id", req.TenantID),
+            quarry.Or(
+                quarry.OptionalILike("email", req.Query),
+                quarry.OptionalILike("display_name", req.Query),
+            ),
+            quarry.OptionalEq("status", req.Status),
+            quarry.OptionalIn("role", anySlice(req.Roles)...),
+        )
+
+    total, err := scan.One[int64](ctx, db,
+        qq.Select(quarry.Raw("COUNT(*)")).
+            From("users").
+            Where(
+                quarry.Eq("tenant_id", req.TenantID),
+                quarry.Or(
+                    quarry.OptionalILike("email", req.Query),
+                    quarry.OptionalILike("display_name", req.Query),
+                ),
+                quarry.OptionalEq("status", req.Status),
+                quarry.OptionalIn("role", anySlice(req.Roles)...),
+            ),
+    )
+    if err != nil {
+        return nil, 0, err
+    }
+
+    rows, err := scan.All[UserRow](ctx, db,
+        base.OrderBySafeDefault(req.Sort, quarry.SortMap{
+            "newest": "created_at DESC",
+            "alpha":  "display_name ASC",
+            "email":  "email ASC",
+        }, "newest").Page(req.Page, req.PerPage),
+    )
+    if err != nil {
+        return nil, 0, err
+    }
+
+    return rows, total, nil
+}</code></pre>
+            <p>
+              The count query is intentionally duplicated. This is one of the places where explicit
+              SQL is easier to review than trying to factor everything into a clever abstraction.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>What the SQL looks like</h2>
+            <pre><code>SELECT id, email, display_name, status, created_at
+FROM users
+WHERE tenant_id = $1
+  AND (LOWER(email) LIKE LOWER($2) OR LOWER(display_name) LIKE LOWER($3))
+  AND status = $4
+  AND role IN ($5, $6)
+ORDER BY created_at DESC
+LIMIT 25 OFFSET 0</code></pre>
+            <p>
+              The values here are not special. The shape is. This is the pattern you want when the
+              filter list changes with each request but the endpoint should still stay boring.
+            </p>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For more on the helpers used here, see
+              <a href="../../reference/core/">Core builders</a>,
+              <a href="../../reference/identifiers/">Identifiers</a>, and
+              <a href="../../reference/scan/">Scan</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

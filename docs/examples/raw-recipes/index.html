@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Raw SQL and codex examples for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Raw SQL and recipes - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="raw-recipes">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Raw SQL, Templates, and Recipes</h1>
+                <p class="lead">
+                  Quarry does not hide the escape hatch. Codex gives it a registry, named bindings,
+                  and recipe wrappers so you can reuse the parts that are worth reusing.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Raw fragments</h2>
+            <pre><code>q := qq.Select(
+    "id",
+    "email",
+    quarry.Raw("COUNT(*) FILTER (WHERE status = ?)", "active"),
+).
+    From("users").
+    Where(quarry.Raw("created_at &gt;= ?", since))</code></pre>
+            <div class="callout info">
+              <strong>Placeholder rewriting still happens</strong>
+              Raw fragments keep the raw SQL visible, but <code>?</code> placeholders still become
+              dialect tokens and the scanner ignores quoted text, comments, and dollar-quoted bodies.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Named templates</h2>
+            <pre><code>store := codex.NewStore()
+store.MustAdd("users.by_email", `
+    SELECT id, email, status
+    FROM users
+    WHERE tenant_id = :tenant_id
+      AND email = :email
+`)</code></pre>
+            <pre><code>template, ok := store.Get("users.by_email")
+if !ok {
+    panic("missing query")
+}
+
+bound := template.With(qq).BindMap(map[string]any{
+    "tenant_id": 42,
+    "email":     "ada@example.com",
+})</code></pre>
+            <div class="callout warning">
+              <strong>Strict mode</strong>
+              If you want unused named arguments rejected, set strict mode on the store before you
+              add the query.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Recipes</h2>
+            <pre><code>type UserSearchParams struct {
+    TenantID int
+    Query    string
+    Status   *string
+}
+
+recipe := codex.NewRecipe(func(qq *quarry.Quarry, p UserSearchParams) quarry.SQLer {
+    return qq.Select("id", "email", "status").
+        From("users").
+        Where(
+            quarry.Eq("tenant_id", p.TenantID),
+            quarry.OptionalILike("email", p.Query),
+            quarry.OptionalEq("status", p.Status),
+        )
+})
+
+if err := store.AddRecipe("users.search", recipe); err != nil {
+    panic(err)
+}</code></pre>
+
+            <pre><code>q, err := store.MustRecipe("users.search").Build(qq, UserSearchParams{
+    TenantID: 42,
+    Query:    "%bob%",
+})
+if err != nil {
+    panic(err)
+}</code></pre>
+          </section>
+
+          <section class="section">
+            <h2>When the raw query is still the right tool</h2>
+            <ul class="feature-list">
+              <li>Window functions that are easier to read directly.</li>
+              <li>Vendor-specific operators that Quarry should not pretend to understand.</li>
+              <li>Existing SQL that you want to keep verbatim while only changing the bindings.</li>
+              <li>Queries that are reused often enough to deserve a name in the registry.</li>
+            </ul>
+          </section>
+
+          <section class="section">
+            <h2>Struct bindings and strict mode</h2>
+            <p>
+              The store can reject unused named arguments, and <code>BindStruct</code> maps fields
+              using the same tag rules as the scan layer.
+            </p>
+            <pre><code>store := codex.NewStore().SetStrict(true)
+store.MustAdd("users.search", `
+    SELECT id, email, status
+    FROM users
+    WHERE tenant_id = :tenant_id
+      AND status = :status
+`)
+
+template, ok := store.Get("users.search")
+if !ok {
+    panic("missing template")
+}
+
+bound := template.With(qq).BindStruct(struct {
+    TenantID int    `db:"tenant_id"`
+    Status   string `db:"status"`
+}{
+    TenantID: 42,
+    Status:   "active",
+})</code></pre>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the registry contract, see
+              <a href="../../reference/codex/">Codex</a> and
+              <a href="../../reference/errors/">Errors</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>
