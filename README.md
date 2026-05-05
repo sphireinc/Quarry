@@ -2,6 +2,8 @@
 
 Quarry is a Go SQL composition toolkit for people who like raw SQL, but want safer dynamic query assembly.
 
+See [INTEGRATION.md](INTEGRATION.md) for an end-to-end example.
+
 ## Basic Use
 
 ```go
@@ -55,3 +57,27 @@ users, err := scan.All[User](ctx, db, q)
 ```
 
 The scan layer stays separate from the core builder so you can still use Quarry as SQL generation only.
+
+## Build a Codex of Queries
+
+Some queries are better written by hand. Some are better composed dynamically.
+Quarry lets both live together.
+
+```go
+cx := codex.New()
+
+cx.RawNamed("users.by_id", `
+	SELECT id, email, created_at
+	FROM users
+	WHERE id = :id
+`)
+
+cx.Recipe("users.search", codex.NewRecipe(func(qq *quarry.Quarry, p UserSearchParams) quarry.SQLer {
+	return qq.Select("id", "email", "created_at").
+		From("users").
+		Where(
+			quarry.OptionalILike("email", p.Search),
+			quarry.OptionalEq("status", p.Status),
+		)
+}))
+```
