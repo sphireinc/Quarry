@@ -2,14 +2,18 @@ package quarry
 
 import "reflect"
 
+// Filters is a convenience alias for a batch of optional predicates.
 type Filters []Predicate
 
+// SortMap maps caller-facing sort keys to trusted ORDER BY fragments.
 type SortMap map[string]string
 
+// optionalPredicate wraps a predicate that may disappear entirely.
 type optionalPredicate struct {
 	pred Predicate
 }
 
+// appendSQL emits the wrapped predicate only when it is not empty.
 func (o optionalPredicate) appendSQL(b *sqlBuilder) error {
 	if o.pred == nil || o.pred.empty() {
 		return nil
@@ -17,10 +21,12 @@ func (o optionalPredicate) appendSQL(b *sqlBuilder) error {
 	return o.pred.appendSQL(b)
 }
 
+// empty reports whether the wrapped predicate should be omitted.
 func (o optionalPredicate) empty() bool {
 	return o.pred == nil || o.pred.empty()
 }
 
+// OptionalEq returns Eq when val is present and a no-op predicate otherwise.
 func OptionalEq(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "=", value: v}
@@ -28,6 +34,7 @@ func OptionalEq(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalNeq returns Neq when val is present and a no-op predicate otherwise.
 func OptionalNeq(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "<>", value: v}
@@ -35,6 +42,7 @@ func OptionalNeq(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalGt returns Gt when val is present and a no-op predicate otherwise.
 func OptionalGt(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: ">", value: v}
@@ -42,6 +50,7 @@ func OptionalGt(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalGte returns Gte when val is present and a no-op predicate otherwise.
 func OptionalGte(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: ">=", value: v}
@@ -49,6 +58,7 @@ func OptionalGte(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalLt returns Lt when val is present and a no-op predicate otherwise.
 func OptionalLt(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "<", value: v}
@@ -56,6 +66,7 @@ func OptionalLt(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalLte returns Lte when val is present and a no-op predicate otherwise.
 func OptionalLte(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "<=", value: v}
@@ -63,6 +74,7 @@ func OptionalLte(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalLike returns Like when val is present and a no-op predicate otherwise.
 func OptionalLike(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return likePredicate{left: col, value: v, caseInsensitive: false}
@@ -70,6 +82,7 @@ func OptionalLike(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalILike returns ILike when val is present and a no-op predicate otherwise.
 func OptionalILike(col string, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return likePredicate{left: col, value: v, caseInsensitive: true}
@@ -77,6 +90,7 @@ func OptionalILike(col string, val any) Predicate {
 	return optionalPredicate{}
 }
 
+// OptionalIn returns In when vals is a non-empty slice or array and a no-op otherwise.
 func OptionalIn(col string, vals any) Predicate {
 	if v, ok := optionalBindSlice(vals); ok {
 		return inPredicate{left: col, values: v, not: false}
@@ -84,6 +98,7 @@ func OptionalIn(col string, vals any) Predicate {
 	return optionalPredicate{}
 }
 
+// WhereIf appends pred only when cond is true and the predicate is non-empty.
 func (b *SelectBuilder) WhereIf(cond bool, pred Predicate) *SelectBuilder {
 	if cond && pred != nil && !pred.empty() {
 		b.preds = append(b.preds, pred)
@@ -91,6 +106,7 @@ func (b *SelectBuilder) WhereIf(cond bool, pred Predicate) *SelectBuilder {
 	return b
 }
 
+// OrderBySafe appends a trusted ORDER BY fragment selected from allowed.
 func (b *SelectBuilder) OrderBySafe(input string, allowed SortMap) *SelectBuilder {
 	if clause, ok := allowed[input]; ok && clause != "" {
 		b.orderBy = append(b.orderBy, clause)
@@ -98,6 +114,7 @@ func (b *SelectBuilder) OrderBySafe(input string, allowed SortMap) *SelectBuilde
 	return b
 }
 
+// OrderBySafeDefault appends the selected sort key or falls back to a trusted default.
 func (b *SelectBuilder) OrderBySafeDefault(input string, allowed SortMap, fallback string) *SelectBuilder {
 	if clause, ok := allowed[input]; ok && clause != "" {
 		b.orderBy = append(b.orderBy, clause)
@@ -109,6 +126,7 @@ func (b *SelectBuilder) OrderBySafeDefault(input string, allowed SortMap, fallba
 	return b
 }
 
+// Page applies one-based page/per-page pagination and derives LIMIT/OFFSET.
 func (b *SelectBuilder) Page(page, perPage int) *SelectBuilder {
 	if page < 1 {
 		page = 1
@@ -122,6 +140,7 @@ func (b *SelectBuilder) Page(page, perPage int) *SelectBuilder {
 	return b
 }
 
+// LimitDefault applies n when it is positive, otherwise a positive fallback.
 func (b *SelectBuilder) LimitDefault(n, fallback int) *SelectBuilder {
 	switch {
 	case n > 0:
@@ -132,6 +151,7 @@ func (b *SelectBuilder) LimitDefault(n, fallback int) *SelectBuilder {
 	return b
 }
 
+// OffsetDefault applies n when it is non-negative, otherwise a non-negative fallback.
 func (b *SelectBuilder) OffsetDefault(n, fallback int) *SelectBuilder {
 	switch {
 	case n >= 0:
@@ -142,6 +162,7 @@ func (b *SelectBuilder) OffsetDefault(n, fallback int) *SelectBuilder {
 	return b
 }
 
+// WhereIf appends pred only when cond is true and the predicate is non-empty.
 func (b *UpdateBuilder) WhereIf(cond bool, pred Predicate) *UpdateBuilder {
 	if cond && pred != nil && !pred.empty() {
 		b.preds = append(b.preds, pred)
@@ -149,6 +170,7 @@ func (b *UpdateBuilder) WhereIf(cond bool, pred Predicate) *UpdateBuilder {
 	return b
 }
 
+// SetIf appends a SET clause only when cond is true.
 func (b *UpdateBuilder) SetIf(cond bool, col string, val any) *UpdateBuilder {
 	if cond && col != "" {
 		b.sets = append(b.sets, setClause{col: col, val: val})
@@ -156,6 +178,7 @@ func (b *UpdateBuilder) SetIf(cond bool, col string, val any) *UpdateBuilder {
 	return b
 }
 
+// SetOptional appends a SET clause only when val is a present, non-empty value.
 func (b *UpdateBuilder) SetOptional(col string, val any) *UpdateBuilder {
 	if v, ok := optionalBindValue(val); ok && col != "" {
 		b.sets = append(b.sets, setClause{col: col, val: v})
@@ -163,6 +186,7 @@ func (b *UpdateBuilder) SetOptional(col string, val any) *UpdateBuilder {
 	return b
 }
 
+// WhereIf appends pred only when cond is true and the predicate is non-empty.
 func (b *DeleteBuilder) WhereIf(cond bool, pred Predicate) *DeleteBuilder {
 	if cond && pred != nil && !pred.empty() {
 		b.preds = append(b.preds, pred)
@@ -170,11 +194,13 @@ func (b *DeleteBuilder) WhereIf(cond bool, pred Predicate) *DeleteBuilder {
 	return b
 }
 
+// optionalBindValue normalizes optional inputs and filters empty values.
 func optionalBindValue(v any) (any, bool) {
 	if v == nil {
 		return nil, false
 	}
 	rv := reflect.ValueOf(v)
+	// Follow pointer chains so pointer-to-pointer inputs still behave predictably.
 	for rv.IsValid() && rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return nil, false
@@ -205,11 +231,13 @@ func optionalBindValue(v any) (any, bool) {
 	}
 }
 
+// optionalBindSlice normalizes optional slice-like inputs for IN predicates.
 func optionalBindSlice(v any) (any, bool) {
 	if v == nil {
 		return nil, false
 	}
 	rv := reflect.ValueOf(v)
+	// Follow pointer chains so caller-owned pointers can be passed directly.
 	for rv.IsValid() && rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return nil, false
@@ -235,6 +263,7 @@ func optionalBindSlice(v any) (any, bool) {
 	}
 }
 
+// intPtr returns a pointer to v for optional LIMIT/OFFSET fields.
 func intPtr(v int) *int {
 	return &v
 }

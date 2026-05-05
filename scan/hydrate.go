@@ -10,6 +10,7 @@ import (
 	"github.com/sphireinc/quarry"
 )
 
+// One renders q, scans exactly one row, and returns an error when no rows or many rows are present.
 func One[T any](ctx context.Context, db Queryer, q quarry.SQLer) (T, error) {
 	rows, err := Query(ctx, db, q)
 	if err != nil {
@@ -34,6 +35,7 @@ func One[T any](ctx context.Context, db Queryer, q quarry.SQLer) (T, error) {
 	return values[0], nil
 }
 
+// MaybeOne renders q and returns nil when no rows are present.
 func MaybeOne[T any](ctx context.Context, db Queryer, q quarry.SQLer) (*T, error) {
 	rows, err := Query(ctx, db, q)
 	if err != nil {
@@ -54,6 +56,7 @@ func MaybeOne[T any](ctx context.Context, db Queryer, q quarry.SQLer) (*T, error
 	return &values[0], nil
 }
 
+// All renders q and scans every row into a slice.
 func All[T any](ctx context.Context, db Queryer, q quarry.SQLer) ([]T, error) {
 	rows, err := Query(ctx, db, q)
 	if err != nil {
@@ -71,6 +74,7 @@ func All[T any](ctx context.Context, db Queryer, q quarry.SQLer) ([]T, error) {
 	return values, nil
 }
 
+// collectAll reads every row from the result set and hydrates them into T values.
 func collectAll[T any](rows *sql.Rows) ([]T, error) {
 	columns, err := rows.Columns()
 	if err != nil {
@@ -91,6 +95,7 @@ func collectAll[T any](rows *sql.Rows) ([]T, error) {
 	return out, nil
 }
 
+// scanRow hydrates a single row into either a struct or a scalar value.
 func scanRow[T any](rows *sql.Rows, columns []string) (T, error) {
 	var zero T
 	targetType := reflect.TypeOf(zero)
@@ -99,6 +104,7 @@ func scanRow[T any](rows *sql.Rows, columns []string) (T, error) {
 	}
 
 	if targetType.Kind() != reflect.Struct {
+		// Non-struct targets are scanned directly into the destination value.
 		return scanIntoValue[T](rows)
 	}
 
@@ -117,6 +123,7 @@ func scanRow[T any](rows *sql.Rows, columns []string) (T, error) {
 	return target.Interface().(T), nil
 }
 
+// scanIntoValue scans a row into a non-struct destination.
 func scanIntoValue[T any](rows *sql.Rows) (T, error) {
 	var out T
 	if err := rows.Scan(&out); err != nil {
@@ -126,11 +133,13 @@ func scanIntoValue[T any](rows *sql.Rows) (T, error) {
 	return out, nil
 }
 
+// structScanPlan records the field destinations for a scanned struct.
 type structScanPlan struct {
 	destinations []any
 	indices      [][]int
 }
 
+// structDestinations maps column names onto struct field indices.
 func structDestinations(targetType reflect.Type, columns []string) (structScanPlan, error) {
 	fieldMap := make(map[string][]int)
 	buildFieldMap(targetType, nil, fieldMap)
@@ -142,6 +151,7 @@ func structDestinations(targetType reflect.Type, columns []string) (structScanPl
 	for i, column := range columns {
 		idx, ok := fieldMap[strings.ToLower(column)]
 		if !ok {
+			// Fail fast so missing mappings surface immediately in tests and review.
 			return structScanPlan{}, fmt.Errorf(`quarry scan: hydrate row: missing destination for column %q`, column)
 		}
 		plan.indices[i] = idx
@@ -149,6 +159,7 @@ func structDestinations(targetType reflect.Type, columns []string) (structScanPl
 	return plan, nil
 }
 
+// buildFieldMap indexes exported fields, including anonymous embedded structs.
 func buildFieldMap(t reflect.Type, prefix []int, fieldMap map[string][]int) {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -166,6 +177,7 @@ func buildFieldMap(t reflect.Type, prefix []int, fieldMap map[string][]int) {
 	}
 }
 
+// fieldName resolves the scan name for a field using db, json, then snake_case.
 func fieldName(field reflect.StructField) (string, bool) {
 	if tag := field.Tag.Get("db"); tag != "" {
 		if tag == "-" {
@@ -182,6 +194,7 @@ func fieldName(field reflect.StructField) (string, bool) {
 	return strings.ToLower(toSnakeCase(field.Name)), true
 }
 
+// toSnakeCase converts CamelCase identifiers into snake_case bindings.
 func toSnakeCase(s string) string {
 	var out strings.Builder
 	for i, r := range s {
