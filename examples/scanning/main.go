@@ -1,11 +1,13 @@
+// Package main prints a Quarry query scanned into Go structs.
 package main
 
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
-
-	_ "modernc.org/sqlite"
+	"io"
+	"strings"
 
 	"github.com/sphireinc/quarry"
 	"github.com/sphireinc/quarry/scan"
@@ -17,25 +19,19 @@ type User struct {
 	Status string `db:"status"`
 }
 
+const driverName = "quarry-example-scan"
+
+func init() {
+	sql.Register(driverName, exampleDriver{})
+}
+
 func main() {
 	ctx := context.Background()
-	db, err := sql.Open("sqlite", "file:quarry-example?mode=memory&cache=shared")
+	db, err := sql.Open(driverName, "")
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
-
-	if _, err := db.ExecContext(ctx, `
-CREATE TABLE users (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	email TEXT NOT NULL,
-	status TEXT NOT NULL
-)`); err != nil {
-		panic(err)
-	}
-	if _, err := db.ExecContext(ctx, `INSERT INTO users (email, status) VALUES (?, ?)`, "a@example.com", "active"); err != nil {
-		panic(err)
-	}
 
 	qq := quarry.New(quarry.SQLite)
 	users, err := scan.All[User](ctx, db, qq.Select("id", "email", "status").From("users").OrderBy("id ASC"))
@@ -44,4 +40,67 @@ CREATE TABLE users (
 	}
 
 	fmt.Println(users)
+}
+
+type exampleDriver struct{}
+
+func (exampleDriver) Open(string) (driver.Conn, error) {
+	return exampleConn{}, nil
+}
+
+type exampleConn struct{}
+
+func (exampleConn) Prepare(string) (driver.Stmt, error) {
+	return nil, driver.ErrSkip
+}
+
+func (exampleConn) Close() error {
+	return nil
+}
+
+func (exampleConn) Begin() (driver.Tx, error) {
+	return nil, driver.ErrSkip
+}
+
+func (exampleConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(query)), "select") {
+		return nil, fmt.Errorf("unexpected query: %s", query)
+	}
+	return &exampleRows{
+		columns: []string{"id", "email", "status"},
+		data: [][]driver.Value{
+			{int64(1), "a@example.com", "active"},
+		},
+	}, nil
+}
+
+func (exampleConn) CheckNamedValue(*driver.NamedValue) error {
+	return nil
+}
+
+var _ driver.Driver = exampleDriver{}
+var _ driver.QueryerContext = exampleConn{}
+var _ driver.NamedValueChecker = exampleConn{}
+
+type exampleRows struct {
+	columns []string
+	data    [][]driver.Value
+	index   int
+}
+
+func (r *exampleRows) Columns() []string {
+	return r.columns
+}
+
+func (r *exampleRows) Close() error {
+	return nil
+}
+
+func (r *exampleRows) Next(dest []driver.Value) error {
+	if r.index >= len(r.data) {
+		return io.EOF
+	}
+	copy(dest, r.data[r.index])
+	r.index++
+	return nil
 }

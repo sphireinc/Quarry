@@ -41,6 +41,16 @@ type unsupportedUser struct {
 	ID chan int `db:"id"`
 }
 
+type jsonFallbackUser struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+}
+
+type snakeFallbackUser struct {
+	ID        int
+	CreatedAt string
+}
+
 func openTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 
@@ -191,6 +201,22 @@ func TestFieldMappingFallbacksAndUnknownColumns(t *testing.T) {
 	if users[0].ID != 1 || users[0].Email != "a@example.com" || users[0].Status != "active" {
 		t.Fatalf("unexpected mapping: %#v", users[0])
 	}
+
+	jsonUsers, err := scan.All[jsonFallbackUser](ctx, db, qq.Select("id", "email").From("users").Where(quarry.Eq("id", 1)))
+	if err != nil {
+		t.Fatalf("json fallback all: %v", err)
+	}
+	if len(jsonUsers) != 1 || jsonUsers[0].ID != 1 || jsonUsers[0].Email != "a@example.com" {
+		t.Fatalf("unexpected json fallback mapping: %#v", jsonUsers)
+	}
+
+	snakeUsers, err := scan.All[snakeFallbackUser](ctx, db, qq.Select("id", "status AS created_at").From("users").Where(quarry.Eq("id", 1)))
+	if err != nil {
+		t.Fatalf("snake fallback all: %v", err)
+	}
+	if len(snakeUsers) != 1 || snakeUsers[0].ID != 1 || snakeUsers[0].CreatedAt == "" {
+		t.Fatalf("unexpected snake fallback mapping: %#v", snakeUsers)
+	}
 }
 
 func TestNullableAndPointerScanning(t *testing.T) {
@@ -238,6 +264,11 @@ func TestDuplicateAndUnsupportedFieldErrors(t *testing.T) {
 	_, err = scan.All[unsupportedUser](ctx, db, qq.Select("id").From("users").Where(quarry.Eq("id", 1)))
 	if err == nil || !strings.Contains(err.Error(), "unsupported field type") {
 		t.Fatalf("expected unsupported field type error, got %v", err)
+	}
+
+	_, err = scan.All[*userRow](ctx, db, qq.Select("id", "email", "status").From("users"))
+	if err == nil || !strings.Contains(err.Error(), "unsupported pointer target") {
+		t.Fatalf("expected pointer target error, got %v", err)
 	}
 }
 
@@ -329,5 +360,35 @@ func TestBuildHelper(t *testing.T) {
 	}
 	if fmt.Sprint(built.Args) != fmt.Sprint([]any{"active"}) {
 		t.Fatalf("args mismatch: %#v", built.Args)
+	}
+}
+
+func TestEmptyResultSetAndDestinationErrors(t *testing.T) {
+	db := openTestDB(t)
+	seedUsers(t, db)
+	ctx := context.Background()
+	qq := quarry.New(quarry.SQLite)
+
+	users, err := scan.All[userRow](ctx, db, qq.Select("id", "email", "status").From("users").Where(quarry.Eq("id", 999)))
+	if err != nil {
+		t.Fatalf("all empty: %v", err)
+	}
+	if users == nil || len(users) != 0 {
+		t.Fatalf("expected empty slice, got %#v", users)
+	}
+
+	_, err = scan.One[userRow](ctx, db, qq.Select("id", "email", "status").From("users").Where(quarry.Eq("id", 999)))
+	if err == nil || !strings.Contains(err.Error(), "no rows") {
+		t.Fatalf("expected no rows error, got %v", err)
+	}
+
+	_, err = scan.One[userRow](ctx, db, qq.Select("id", "email", "status").From("users").OrderBy("id ASC"))
+	if err == nil || !strings.Contains(err.Error(), "exactly one row") {
+		t.Fatalf("expected exactly one row error, got %v", err)
+	}
+
+	_, err = scan.MaybeOne[userRow](ctx, db, qq.Select("id", "email", "status").From("users").OrderBy("id ASC"))
+	if err == nil || !strings.Contains(err.Error(), "at most one row") {
+		t.Fatalf("expected maybe one error, got %v", err)
 	}
 }

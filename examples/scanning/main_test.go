@@ -41,3 +41,9 @@ func TestMain(t *testing.T) {
 		t.Fatalf("unexpected output: %s", out)
 	}
 }
+
+func ExampleMain() {
+	main()
+	// Output:
+	// [{1 a@example.com active}]
+}

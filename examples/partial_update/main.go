@@ -1,3 +1,4 @@
+// Package main prints a Quarry UPDATE statement with optional fields.
 package main
 
 import (

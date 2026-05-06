@@ -1,3 +1,7 @@
+// Package quarry provides a small, explicit Go SQL composition toolkit.
+//
+// Quarry keeps SQL visible, binds values explicitly, and stays close to
+// database/sql instead of trying to become an ORM or schema modeler.
 package quarry
 
 import (

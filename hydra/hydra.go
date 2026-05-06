@@ -1,3 +1,7 @@
+// Package hydra provides a thin compatibility wrapper around Quarry's scan package.
+//
+// It exists so older imports can keep the same row-scanning helpers without
+// pulling in a separate abstraction layer.
 package hydra
 
 import (

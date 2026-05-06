@@ -3,11 +3,10 @@ package hydra
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
-	"strings"
+	"io"
 	"testing"
-
-	_ "modernc.org/sqlite"
 
 	"github.com/sphireinc/quarry"
 )
@@ -18,20 +17,20 @@ type hydraUser struct {
 	Status string `db:"status"`
 }
 
+const hydraDriverName = "quarry-hydra-test"
+
+func init() {
+	sql.Register(hydraDriverName, hydraDriver{})
+}
+
 func openHydraDB(t *testing.T) *sql.DB {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s?mode=memory&cache=shared", strings.ReplaceAll(t.Name(), "/", "_")))
+	db, err := sql.Open(hydraDriverName, "")
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(`CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, status TEXT NOT NULL)`); err != nil {
-		t.Fatalf("create schema: %v", err)
-	}
-	if _, err := db.Exec(`INSERT INTO users (email, status) VALUES ('a@example.com', 'active')`); err != nil {
-		t.Fatalf("seed row: %v", err)
-	}
 	t.Cleanup(func() { _ = db.Close() })
 	return db
 }
@@ -64,4 +63,80 @@ func TestHydraWrappers(t *testing.T) {
 	if maybe != nil {
 		t.Fatalf("expected nil, got %#v", maybe)
 	}
+}
+
+type hydraDriver struct{}
+
+func (hydraDriver) Open(string) (driver.Conn, error) {
+	return hydraConn{}, nil
+}
+
+type hydraConn struct{}
+
+func (hydraConn) Prepare(string) (driver.Stmt, error) {
+	return nil, driver.ErrSkip
+}
+
+func (hydraConn) Close() error {
+	return nil
+}
+
+func (hydraConn) Begin() (driver.Tx, error) {
+	return nil, driver.ErrSkip
+}
+
+func (hydraConn) QueryContext(_ context.Context, _ string, args []driver.NamedValue) (driver.Rows, error) {
+	if len(args) > 0 {
+		switch v := args[0].Value.(type) {
+		case int:
+			if v == 999 {
+				return &hydraRows{columns: []string{"id", "email", "status"}}, nil
+			}
+		case int64:
+			if v == 999 {
+				return &hydraRows{columns: []string{"id", "email", "status"}}, nil
+			}
+		case fmt.Stringer:
+			if v.String() == "999" {
+				return &hydraRows{columns: []string{"id", "email", "status"}}, nil
+			}
+		}
+	}
+	return &hydraRows{
+		columns: []string{"id", "email", "status"},
+		data: [][]driver.Value{
+			{int64(1), "a@example.com", "active"},
+		},
+	}, nil
+}
+
+func (hydraConn) CheckNamedValue(*driver.NamedValue) error {
+	return nil
+}
+
+var _ driver.Driver = hydraDriver{}
+var _ driver.QueryerContext = hydraConn{}
+var _ driver.NamedValueChecker = hydraConn{}
+
+type hydraRows struct {
+	columns []string
+	data    [][]driver.Value
+	index   int
+}
+
+func (r *hydraRows) Columns() []string {
+	return r.columns
+}
+
+func (r *hydraRows) Close() error {
+	return nil
+}
+
+func (r *hydraRows) Next(dest []driver.Value) error {
+	if r.index >= len(r.data) {
+		return io.EOF
+	}
+	copy(dest, r.data[r.index])
+	r.index++
+	return nil
 }

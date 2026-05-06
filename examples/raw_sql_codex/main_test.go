@@ -41,3 +41,10 @@ func TestMain(t *testing.T) {
 		t.Fatalf("unexpected args output: %s", out)
 	}
 }
+
+func ExampleMain() {
+	main()
+	// Output:
+	// SELECT id, email FROM users WHERE id = $1
+	// [10]
+}

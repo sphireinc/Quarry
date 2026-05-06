@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Quarry package map and import guide." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Packages - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="packages">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Reference</div>
+                <h1>Package Map</h1>
+                <p class="lead">
+                  Quarry has a small public surface. This page shows what each package is for,
+                  whether it is core or optional, and which import path to reach for first.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Public packages</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Import path</th>
+                  <th>Purpose</th>
+                  <th>Core or optional</th>
+                  <th>Minimal example</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>github.com/sphireinc/quarry</code></td>
+                  <td>Root builder API, identifiers, predicates, and dialect policy.</td>
+                  <td>Core</td>
+                  <td><code>qq := quarry.New(quarry.Postgres)</code></td>
+                </tr>
+                <tr>
+                  <td><code>github.com/sphireinc/quarry/scan</code></td>
+                  <td>Execute Quarry queries and scan rows into Go values.</td>
+                  <td>Optional</td>
+                  <td><code>users, err := scan.All[User](ctx, db, q)</code></td>
+                </tr>
+                <tr>
+                  <td><code>github.com/sphireinc/quarry/hydra</code></td>
+                  <td>Compatibility wrapper around <code>scan</code>.</td>
+                  <td>Optional</td>
+                  <td><code>rows, err := hydra.All[User](ctx, db, q)</code></td>
+                </tr>
+                <tr>
+                  <td><code>github.com/sphireinc/quarry/codex</code></td>
+                  <td>Named raw queries and reusable recipes.</td>
+                  <td>Optional</td>
+                  <td><code>cx := codex.New()</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <h2>Internal packages</h2>
+            <div class="callout info">
+              <strong>Not public API</strong>
+              <p>
+                <code>internal/rawsql</code> is an internal implementation detail used by Quarry
+                and Codex for placeholder rewriting. It is not meant to be imported directly.
+              </p>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Which package should I import?</h2>
+            <div class="columns">
+              <div class="card">
+                <h3>Start with <code>quarry</code></h3>
+                <p>
+                  If you are building SQL, this is the package you want first. Everything else is
+                  optional.
+                </p>
+              </div>
+              <div class="card">
+                <h3>Add <code>scan</code> when execution matters</h3>
+                <p>
+                  Use it when you want Quarry to render SQL and hydrate rows through
+                  <code>database/sql</code>.
+                </p>
+              </div>
+              <div class="card">
+                <h3>Add <code>codex</code> when reuse matters</h3>
+                <p>
+                  Use it when named templates or recipes keep repeated query shapes readable.
+                </p>
+              </div>
+              <div class="card">
+                <h3>Use <code>hydra</code> only for compatibility</h3>
+                <p>
+                  It exists so older imports can keep working without changing row-scanning code.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For behavior details, see
+              <a href="../../reference/core/">Core builders</a>,
+              <a href="../../reference/scan/">Scan</a>,
+              <a href="../../reference/codex/">Codex</a>, and
+              <a href="../../reference/dialects/">Dialects</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

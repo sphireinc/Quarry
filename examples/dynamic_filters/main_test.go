@@ -44,3 +44,10 @@ func TestMain(t *testing.T) {
 		t.Fatalf("unexpected args output: %s", out)
 	}
 }
+
+func ExampleMain() {
+	main()
+	// Output:
+	// SELECT id, email, created_at FROM users WHERE tenant_id = $1 AND (email ILIKE $2 OR name ILIKE $3) ORDER BY created_at DESC LIMIT 25 OFFSET 0
+	// [42 %bob% %bob%]
+}

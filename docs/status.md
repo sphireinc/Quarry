@@ -1,6 +1,6 @@
 # Quarry Status
 
-Quarry is under active implementation. This file is intentionally honest about what exists today versus what is still planned.
+Quarry is a public v1.0.0 release. The documented API is intentionally small, explicit, and meant to stay that way unless changes are intentional and versioned.
 
 ## Implemented
 
@@ -18,10 +18,10 @@ Quarry is under active implementation. This file is intentionally honest about w
 - Separate `quarry/hydra` compatibility wrapper.
 - Separate `quarry/codex` registry for raw queries and recipes.
 - Hardened named query store with deterministic lookup, name validation, and optional strict parameter checking.
-- README, integration guide, examples, and Squirrel migration notes.
-- A GitHub Pages-friendly docs site under `docs/` with landing, getting-started, guide, and reference pages.
-- Golden SQL tests, a CI matrix across OS and Go versions, and a Linux verification job with `make check`, `make distcheck`, and `go test -race ./...`.
-- Public API polish for v0.1.0, including broader documentation coverage and safer codex recipe behavior.
+- README, integration guide, examples, comparison notes, package map, and Squirrel migration notes.
+- A GitHub Pages-friendly docs site under `docs/` with landing, getting-started, guide, reference, and examples pages.
+- Golden SQL tests, a CI matrix across OS and Go versions, and a Linux verification job with `make check`, `make examples`, `make distcheck`, `make staticcheck`, `make vulncheck`, and `make test-race`.
+- Public API polish for the v1.0.0 release, including broader documentation coverage and safer codex recipe behavior.
 - Unit tests for the implemented builder, scan, and codex behavior.
 
 ## Partial
@@ -35,5 +35,5 @@ Quarry is under active implementation. This file is intentionally honest about w
 ## What This Means
 
 - Quarry is useful today for explicit SQL composition and optional scanning helpers.
-- Quarry is in a polished pre-v0.1.0 state with the documented surface implemented.
+- Quarry is a v1.0.0 public release with an intentionally small API surface.
 - Contributors should expect future changes only if new features or API refinements are intentionally added.

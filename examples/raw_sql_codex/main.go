@@ -1,3 +1,4 @@
+// Package main prints Quarry raw SQL and Codex binding examples.
 package main
 
 import (

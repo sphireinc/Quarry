@@ -29,7 +29,7 @@
         <div class="topbar-spacer"></div>
         <div class="toolbar">
           <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
-          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
         </div>
       </header>
 
@@ -45,8 +45,8 @@
                 <div class="eyebrow">Example</div>
                 <h1>Raw SQL, Templates, and Recipes</h1>
                 <p class="lead">
-                  Quarry does not hide the escape hatch. Codex gives it a registry, named bindings,
-                  and recipe wrappers so you can reuse the parts that are worth reusing.
+                  Quarry keeps the escape hatch visible. Codex adds a small registry for reusable
+                  raw SQL templates and typed recipe wrappers when the same shape shows up again.
                 </p>
               </div>
               <div class="hero-card">
@@ -125,6 +125,11 @@ if err := store.AddRecipe("users.search", recipe); err != nil {
 if err != nil {
     panic(err)
 }</code></pre>
+            <div class="callout info">
+              <strong>What this section is for</strong>
+              It shows how a recipe stays close to raw SQL while still returning a Quarry query
+              that the rest of the code can render or execute.
+            </div>
           </section>
 
           <section class="section">
@@ -133,7 +138,7 @@ if err != nil {
               <li>Window functions that are easier to read directly.</li>
               <li>Vendor-specific operators that Quarry should not pretend to understand.</li>
               <li>Existing SQL that you want to keep verbatim while only changing the bindings.</li>
-              <li>Queries that are reused often enough to deserve a name in the registry.</li>
+              <li>Queries that are reused often enough to deserve a stable name in the registry.</li>
             </ul>
           </section>
 

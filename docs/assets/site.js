@@ -66,6 +66,12 @@ const NAV = [
         title: "Dialects",
         description: "Placeholder, quoting, and feature policy.",
       },
+      {
+        page: "packages",
+        href: "reference/packages/",
+        title: "Packages",
+        description: "What to import and what stays internal.",
+      },
     ],
   },
   {

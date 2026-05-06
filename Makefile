@@ -1,24 +1,48 @@
 .DEFAULT_GOAL := check
 
-.PHONY: fmt vet test race tidy check distcheck
+GOCACHE := $(CURDIR)/.cache/go-build
+GOENV := GOCACHE=$(GOCACHE)
+
+export GOCACHE
+
+.PHONY: fmt fmt-write vet test test-race race staticcheck vulncheck examples tidy check distcheck
 
 fmt:
-	go fmt ./...
+	@dirs="$$( $(GOENV) go list -f '{{.Dir}}' ./...)"; \
+	files="$$(gofmt -l $$dirs)"; \
+	if [ -n "$$files" ]; then \
+		printf '%s\n' "$$files"; \
+		exit 1; \
+	fi
+
+fmt-write:
+	dirs="$$( $(GOENV) go list -f '{{.Dir}}' ./...)"; \
+	gofmt -w $$dirs
 
 vet:
-	go vet ./...
+	$(GOENV) go vet ./...
 
 test:
-	go test ./...
+	$(GOENV) go test ./...
 
-race:
-	go test -race ./...
+test-race:
+	$(GOENV) go test -race ./...
+
+race: test-race
+
+staticcheck:
+	$(GOENV) go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+
+vulncheck:
+	$(GOENV) go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+examples:
+	$(GOENV) go test ./examples/...
 
 tidy:
-	go mod tidy
+	$(GOENV) go mod tidy
 
 check: fmt vet test
 
-distcheck: tidy
+distcheck: tidy fmt vet test test-race examples
 	git diff --exit-code -- go.mod go.sum
-	go test ./...
