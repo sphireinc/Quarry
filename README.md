@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/working_logo.png" alt="Quarry logo" width="104" />
+  <img src="docs/assets/working_logo.png" alt="Quarry logo" width="400" />
 </p>
 
 <p align="center">
