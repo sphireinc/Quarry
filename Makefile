@@ -1,10 +1,5 @@
 .DEFAULT_GOAL := check
 
-CACHE_BASE ?= $(CURDIR)/.cache
-GOCACHE ?= $(CACHE_BASE)/go-build
-GOMODCACHE ?= $(CACHE_BASE)/go-mod
-export GOCACHE GOMODCACHE
-
 .PHONY: fmt vet test race tidy check distcheck
 
 fmt:
