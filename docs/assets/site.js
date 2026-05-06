@@ -168,15 +168,8 @@ function getSiteBase() {
 
 function applyStoredTheme() {
   const saved = localStorage.getItem(THEME_KEY);
-  const theme = saved || systemTheme();
+  const theme = saved || "light";
   setTheme(theme);
-}
-
-function systemTheme() {
-  return window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
 }
 
 function setTheme(theme) {
@@ -196,7 +189,7 @@ function setTheme(theme) {
 }
 
 function toggleTheme() {
-  const current = document.documentElement.dataset.theme || systemTheme();
+  const current = document.documentElement.dataset.theme || "light";
   setTheme(current === "dark" ? "light" : "dark");
 }
 
@@ -228,7 +221,7 @@ function bindTopbar() {
     });
   }
 
-  setTheme(document.documentElement.dataset.theme || systemTheme());
+  setTheme(document.documentElement.dataset.theme || "light");
 }
 
 function renderNav() {

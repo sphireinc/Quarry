@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/sphireinc/quarry"
+	"github.com/sphireinc/quarry/internal/rawsql"
 )
 
+// StoredQuery is the shared interface for named registry entries.
 type StoredQuery interface {
 	Name() string
 }
@@ -15,7 +17,7 @@ type StoredQuery interface {
 // StoredRecipe is a named query that can be built from Quarry inputs.
 type StoredRecipe interface {
 	StoredQuery
-	Build(*quarry.Quarry, any) quarry.SQLer
+	Build(*quarry.Quarry, any) (quarry.SQLer, error)
 }
 
 // Codex stores named raw queries and recipes in one registry.
@@ -32,6 +34,9 @@ func New() *Codex {
 func (c *Codex) Add(name string, q StoredQuery) error {
 	if c == nil {
 		return fmt.Errorf("quarry codex: nil codex")
+	}
+	if c.queries == nil {
+		c.queries = make(map[string]StoredQuery)
 	}
 	if strings.TrimSpace(name) == "" {
 		return fmt.Errorf("quarry codex: query name is required")
@@ -145,10 +150,12 @@ const (
 	rawNamed
 )
 
+// RawQuery stores a raw SQL template that can be bound later.
 type RawQuery struct {
-	name  string
-	sql   string
-	named bool
+	name   string
+	sql    string
+	named  bool
+	strict bool
 }
 
 // Name returns the registry name for the raw template.
@@ -175,6 +182,7 @@ const (
 	bindNamed
 )
 
+// BoundRaw is a raw template bound to a specific dialect and argument set.
 type BoundRaw struct {
 	template RawQuery
 	dialect  quarry.Dialect
@@ -244,12 +252,27 @@ func (b *BoundRaw) ToSQL() (string, []any, error) {
 		if b.mode != bindNamed {
 			return "", nil, fmt.Errorf("quarry codex: raw query %q requires named bindings", b.template.name)
 		}
-		return rewriteNamed(b.dialect, b.template.sql, b.named)
+		sqlText, args, err := rawsql.RewriteNamedPlaceholders(b.template.sql, b.named, func(n int) string {
+			return placeholderFor(b.dialect, n)
+		}, b.template.strict)
+		if err != nil {
+			return "", nil, err
+		}
+		return sqlText, args, nil
 	}
 	if b.mode != bindPositional {
 		return "", nil, fmt.Errorf("quarry codex: raw query %q requires positional bindings", b.template.name)
 	}
-	return rewritePositional(b.dialect, b.template.sql, b.args)
+	sqlText, args, err := rawsql.RewriteQuestionPlaceholders(b.template.sql, b.args, func(n int) string {
+		return placeholderFor(b.dialect, n)
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "raw placeholder count does not match args count") {
+			return "", nil, fmt.Errorf("quarry codex: %w", quarry.ErrPlaceholderMismatch)
+		}
+		return "", nil, err
+	}
+	return sqlText, args, nil
 }
 
 // RecipeFunc is the typed builder signature accepted by recipe wrappers.
@@ -266,11 +289,18 @@ func NewRecipe[P any](fn RecipeFunc[P]) Recipe[P] {
 }
 
 // Build invokes the typed recipe directly.
-func (r Recipe[P]) Build(qq *quarry.Quarry, p P) quarry.SQLer {
+func (r Recipe[P]) Build(qq *quarry.Quarry, p P) (quarry.SQLer, error) {
 	if r.fn == nil {
-		return nil
+		return nil, fmt.Errorf("quarry codex: recipe is nil")
 	}
-	return r.fn(qq, p)
+	if qq == nil {
+		return nil, fmt.Errorf("quarry codex: recipe received nil quarry")
+	}
+	sqler := r.fn(qq, p)
+	if sqler == nil {
+		return nil, fmt.Errorf("quarry codex: recipe returned nil query")
+	}
+	return sqler, nil
 }
 
 // WithName turns an anonymous typed recipe into a named registry entry.
@@ -289,17 +319,21 @@ func (r namedRecipe[P]) Name() string {
 	return r.name
 }
 
-// Build invokes the typed recipe and panics when the caller supplies the wrong type.
-func (r namedRecipe[P]) Build(qq *quarry.Quarry, params any) quarry.SQLer {
+// Build invokes the typed recipe and returns helpful errors for invalid input.
+func (r namedRecipe[P]) Build(qq *quarry.Quarry, params any) (quarry.SQLer, error) {
 	if r.fn == nil {
-		panic(fmt.Sprintf("quarry codex: recipe %q is nil", r.name))
+		return nil, fmt.Errorf("quarry codex: recipe %q is nil", r.name)
 	}
 	typed, ok := params.(P)
 	if !ok {
 		var zero P
-		panic(fmt.Sprintf("quarry codex: recipe %q received %T, expected %T", r.name, params, zero))
+		return nil, fmt.Errorf("quarry codex: recipe %q received %T, expected %T", r.name, params, zero)
 	}
-	return r.fn(qq, typed)
+	sqler := r.fn(qq, typed)
+	if sqler == nil {
+		return nil, fmt.Errorf("quarry codex: recipe %q returned nil query", r.name)
+	}
+	return sqler, nil
 }
 
 // reflectedRecipe adapts a runtime function value into the recipe contract.
@@ -314,22 +348,22 @@ func (r reflectedRecipe) Name() string {
 }
 
 // Build validates the function shape at runtime and then invokes it.
-func (r reflectedRecipe) Build(qq *quarry.Quarry, params any) quarry.SQLer {
+func (r reflectedRecipe) Build(qq *quarry.Quarry, params any) (quarry.SQLer, error) {
 	if !r.fn.IsValid() {
-		panic(fmt.Sprintf("quarry codex: recipe %q is nil", r.name))
+		return nil, fmt.Errorf("quarry codex: recipe %q is nil", r.name)
 	}
 	if qq == nil {
-		panic(fmt.Sprintf("quarry codex: recipe %q received nil quarry", r.name))
+		return nil, fmt.Errorf("quarry codex: recipe %q received nil quarry", r.name)
 	}
 	fnType := r.fn.Type()
 	if fnType.Kind() != reflect.Func || fnType.NumIn() != 2 || fnType.NumOut() != 1 {
-		panic(fmt.Sprintf("quarry codex: recipe %q has unsupported function signature", r.name))
+		return nil, fmt.Errorf("quarry codex: recipe %q has unsupported function signature", r.name)
 	}
 
 	// Keep the first parameter strict so recipes stay visually obvious in code review.
 	quarryType := reflect.TypeOf((*quarry.Quarry)(nil))
 	if !fnType.In(0).AssignableTo(quarryType) {
-		panic(fmt.Sprintf("quarry codex: recipe %q must accept *quarry.Quarry as first argument", r.name))
+		return nil, fmt.Errorf("quarry codex: recipe %q must accept *quarry.Quarry as first argument", r.name)
 	}
 
 	paramType := fnType.In(1)
@@ -338,7 +372,7 @@ func (r reflectedRecipe) Build(qq *quarry.Quarry, params any) quarry.SQLer {
 		if isNilable(paramType) {
 			paramValue = reflect.Zero(paramType)
 		} else {
-			panic(fmt.Sprintf("quarry codex: recipe %q received nil params", r.name))
+			return nil, fmt.Errorf("quarry codex: recipe %q received nil params", r.name)
 		}
 	} else {
 		paramValue = reflect.ValueOf(params)
@@ -346,78 +380,27 @@ func (r reflectedRecipe) Build(qq *quarry.Quarry, params any) quarry.SQLer {
 			if paramValue.Type().ConvertibleTo(paramType) {
 				paramValue = paramValue.Convert(paramType)
 			} else {
-				panic(fmt.Sprintf("quarry codex: recipe %q received %T, expected %s", r.name, params, paramType))
+				return nil, fmt.Errorf("quarry codex: recipe %q received %T, expected %s", r.name, params, paramType)
 			}
 		}
 	}
 
 	out := r.fn.Call([]reflect.Value{reflect.ValueOf(qq), paramValue})
 	if len(out) != 1 {
-		panic(fmt.Sprintf("quarry codex: recipe %q returned unexpected values", r.name))
+		return nil, fmt.Errorf("quarry codex: recipe %q returned unexpected values", r.name)
 	}
 	sqler, ok := out[0].Interface().(quarry.SQLer)
 	if !ok {
-		panic(fmt.Sprintf("quarry codex: recipe %q returned unsupported type %T", r.name, out[0].Interface()))
+		return nil, fmt.Errorf("quarry codex: recipe %q returned unsupported type %T", r.name, out[0].Interface())
 	}
-	return sqler
-}
-
-func rewritePositional(d quarry.Dialect, sql string, args []any) (string, []any, error) {
-	var b strings.Builder
-	out := make([]any, 0, len(args))
-	argIndex := 0
-	for i := 0; i < len(sql); i++ {
-		if sql[i] != '?' {
-			b.WriteByte(sql[i])
-			continue
-		}
-		if argIndex >= len(args) {
-			return "", nil, fmt.Errorf("quarry codex: raw placeholder count does not match args count")
-		}
-		out = append(out, args[argIndex])
-		b.WriteString(placeholderFor(d, len(out)))
-		argIndex++
+	if sqler == nil {
+		return nil, fmt.Errorf("quarry codex: recipe %q returned nil query", r.name)
 	}
-	if argIndex != len(args) {
-		return "", nil, fmt.Errorf("quarry codex: raw placeholder count does not match args count")
-	}
-	return b.String(), out, nil
-}
-
-func rewriteNamed(d quarry.Dialect, sql string, values map[string]any) (string, []any, error) {
-	var b strings.Builder
-	var out []any
-	for i := 0; i < len(sql); i++ {
-		// Skip PostgreSQL cast syntax like `::date`; only single-colon tokens are bindings.
-		if sql[i] != ':' || i+1 >= len(sql) || !isIdentStart(sql[i+1]) || (i > 0 && sql[i-1] == ':') {
-			b.WriteByte(sql[i])
-			continue
-		}
-		j := i + 2
-		for j < len(sql) && isIdentPart(sql[j]) {
-			j++
-		}
-		name := sql[i+1 : j]
-		value, ok := values[name]
-		if !ok {
-			return "", nil, fmt.Errorf("quarry codex: named parameter %q missing", name)
-		}
-		out = append(out, value)
-		b.WriteString(placeholderFor(d, len(out)))
-		i = j - 1
-	}
-	return b.String(), out, nil
+	return sqler, nil
 }
 
 func placeholderFor(d quarry.Dialect, n int) string {
-	switch d {
-	case quarry.Postgres:
-		return fmt.Sprintf("$%d", n)
-	case quarry.MySQL, quarry.SQLite:
-		return "?"
-	default:
-		return ""
-	}
+	return d.Placeholder(n)
 }
 
 // structToMap extracts bind values from a struct using the documented tag precedence.
@@ -487,16 +470,6 @@ func copyStringMap(in map[string]any) map[string]any {
 		out[k] = v
 	}
 	return out
-}
-
-// isIdentStart reports whether a byte can start a named bind token.
-func isIdentStart(b byte) bool {
-	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || b == '_'
-}
-
-// isIdentPart reports whether a byte can continue a named bind token.
-func isIdentPart(b byte) bool {
-	return isIdentStart(b) || (b >= '0' && b <= '9')
 }
 
 func isNilable(t reflect.Type) bool {

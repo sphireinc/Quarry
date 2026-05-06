@@ -27,7 +27,7 @@ func (o optionalPredicate) empty() bool {
 }
 
 // OptionalEq returns Eq when val is present and a no-op predicate otherwise.
-func OptionalEq(col string, val any) Predicate {
+func OptionalEq(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "=", value: v}
 	}
@@ -35,7 +35,7 @@ func OptionalEq(col string, val any) Predicate {
 }
 
 // OptionalNeq returns Neq when val is present and a no-op predicate otherwise.
-func OptionalNeq(col string, val any) Predicate {
+func OptionalNeq(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "<>", value: v}
 	}
@@ -43,7 +43,7 @@ func OptionalNeq(col string, val any) Predicate {
 }
 
 // OptionalGt returns Gt when val is present and a no-op predicate otherwise.
-func OptionalGt(col string, val any) Predicate {
+func OptionalGt(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: ">", value: v}
 	}
@@ -51,7 +51,7 @@ func OptionalGt(col string, val any) Predicate {
 }
 
 // OptionalGte returns Gte when val is present and a no-op predicate otherwise.
-func OptionalGte(col string, val any) Predicate {
+func OptionalGte(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: ">=", value: v}
 	}
@@ -59,7 +59,7 @@ func OptionalGte(col string, val any) Predicate {
 }
 
 // OptionalLt returns Lt when val is present and a no-op predicate otherwise.
-func OptionalLt(col string, val any) Predicate {
+func OptionalLt(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "<", value: v}
 	}
@@ -67,7 +67,7 @@ func OptionalLt(col string, val any) Predicate {
 }
 
 // OptionalLte returns Lte when val is present and a no-op predicate otherwise.
-func OptionalLte(col string, val any) Predicate {
+func OptionalLte(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return comparisonPredicate{left: col, op: "<=", value: v}
 	}
@@ -75,7 +75,7 @@ func OptionalLte(col string, val any) Predicate {
 }
 
 // OptionalLike returns Like when val is present and a no-op predicate otherwise.
-func OptionalLike(col string, val any) Predicate {
+func OptionalLike(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return likePredicate{left: col, value: v, caseInsensitive: false}
 	}
@@ -83,19 +83,20 @@ func OptionalLike(col string, val any) Predicate {
 }
 
 // OptionalILike returns ILike when val is present and a no-op predicate otherwise.
-func OptionalILike(col string, val any) Predicate {
+func OptionalILike(col any, val any) Predicate {
 	if v, ok := optionalBindValue(val); ok {
 		return likePredicate{left: col, value: v, caseInsensitive: true}
 	}
 	return optionalPredicate{}
 }
 
-// OptionalIn returns In when vals is a non-empty slice or array and a no-op otherwise.
-func OptionalIn(col string, vals any) Predicate {
-	if v, ok := optionalBindSlice(vals); ok {
-		return inPredicate{left: col, values: v, not: false}
+// OptionalIn returns In when vals is present and a no-op predicate otherwise.
+func OptionalIn(col any, values ...any) Predicate {
+	normalized, empty, _ := normalizeINValues(values)
+	if empty {
+		return optionalPredicate{}
 	}
-	return optionalPredicate{}
+	return inPredicate{left: col, values: normalized, not: false}
 }
 
 // WhereIf appends pred only when cond is true and the predicate is non-empty.
@@ -134,9 +135,10 @@ func (b *SelectBuilder) Page(page, perPage int) *SelectBuilder {
 	if perPage < 1 {
 		perPage = 50
 	}
-	b.limit = intPtr(perPage)
-	offset := (page - 1) * perPage
-	b.offset = intPtr(offset)
+	limit := uint64(perPage)
+	b.limit = &limit
+	offset := uint64((page - 1) * perPage)
+	b.offset = &offset
 	return b
 }
 
@@ -144,9 +146,11 @@ func (b *SelectBuilder) Page(page, perPage int) *SelectBuilder {
 func (b *SelectBuilder) LimitDefault(n, fallback int) *SelectBuilder {
 	switch {
 	case n > 0:
-		b.limit = intPtr(n)
+		limit := uint64(n)
+		b.limit = &limit
 	case fallback > 0:
-		b.limit = intPtr(fallback)
+		limit := uint64(fallback)
+		b.limit = &limit
 	}
 	return b
 }
@@ -155,9 +159,11 @@ func (b *SelectBuilder) LimitDefault(n, fallback int) *SelectBuilder {
 func (b *SelectBuilder) OffsetDefault(n, fallback int) *SelectBuilder {
 	switch {
 	case n >= 0:
-		b.offset = intPtr(n)
+		offset := uint64(n)
+		b.offset = &offset
 	case fallback >= 0:
-		b.offset = intPtr(fallback)
+		offset := uint64(fallback)
+		b.offset = &offset
 	}
 	return b
 }
@@ -171,16 +177,16 @@ func (b *UpdateBuilder) WhereIf(cond bool, pred Predicate) *UpdateBuilder {
 }
 
 // SetIf appends a SET clause only when cond is true.
-func (b *UpdateBuilder) SetIf(cond bool, col string, val any) *UpdateBuilder {
-	if cond && col != "" {
+func (b *UpdateBuilder) SetIf(cond bool, col any, val any) *UpdateBuilder {
+	if cond && col != nil {
 		b.sets = append(b.sets, setClause{col: col, val: val})
 	}
 	return b
 }
 
 // SetOptional appends a SET clause only when val is a present, non-empty value.
-func (b *UpdateBuilder) SetOptional(col string, val any) *UpdateBuilder {
-	if v, ok := optionalBindValue(val); ok && col != "" {
+func (b *UpdateBuilder) SetOptional(col any, val any) *UpdateBuilder {
+	if v, ok := optionalBindValue(val); ok && col != nil {
 		b.sets = append(b.sets, setClause{col: col, val: v})
 	}
 	return b
@@ -229,41 +235,4 @@ func optionalBindValue(v any) (any, bool) {
 	default:
 		return rv.Interface(), true
 	}
-}
-
-// optionalBindSlice normalizes optional slice-like inputs for IN predicates.
-func optionalBindSlice(v any) (any, bool) {
-	if v == nil {
-		return nil, false
-	}
-	rv := reflect.ValueOf(v)
-	// Follow pointer chains so caller-owned pointers can be passed directly.
-	for rv.IsValid() && rv.Kind() == reflect.Pointer {
-		if rv.IsNil() {
-			return nil, false
-		}
-		rv = rv.Elem()
-	}
-	if !rv.IsValid() {
-		return nil, false
-	}
-	switch rv.Kind() {
-	case reflect.Slice:
-		if rv.IsNil() || rv.Len() == 0 {
-			return nil, false
-		}
-		return rv.Interface(), true
-	case reflect.Array:
-		if rv.Len() == 0 {
-			return nil, false
-		}
-		return rv.Interface(), true
-	default:
-		return nil, false
-	}
-}
-
-// intPtr returns a pointer to v for optional LIMIT/OFFSET fields.
-func intPtr(v int) *int {
-	return &v
 }
