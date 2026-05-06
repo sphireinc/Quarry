@@ -1,7 +1,9 @@
 .DEFAULT_GOAL := check
 
-export GOCACHE := /private/tmp/quarry-gocache
-export GOMODCACHE := /private/tmp/quarry-gomodcache
+CACHE_BASE ?= $(CURDIR)/.cache
+GOCACHE ?= $(CACHE_BASE)/go-build
+GOMODCACHE ?= $(CACHE_BASE)/go-mod
+export GOCACHE GOMODCACHE
 
 .PHONY: fmt vet test race tidy check distcheck
 
