@@ -1,8 +1,25 @@
+<p align="center">
+  <img src="docs/assets/working_logo.png" alt="Quarry logo" width="104" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/sphireinc/Quarry/actions/workflows/ci.yml">
+    <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/sphireinc/Quarry/ci.yml?branch=main" />
+  </a>
+  <a href="LICENSE">
+    <img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" />
+  </a>
+  <a href="go.mod">
+    <img alt="Go" src="https://img.shields.io/badge/go-1.23%2B-blue.svg" />
+  </a>
+  <a href="docs/index.html">
+    <img alt="Docs" src="https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg" />
+  </a>
+</p>
+
 # Quarry
 
-
-
-Quarry is a Go SQL composition toolkit for people who like raw SQL, but hate brittle dynamic query assembly.
+Quarry is a SQL Composition Kit for Go.
 
 > Write SQL-shaped Go. Compose filters safely. Bind args predictably. Scan results cleanly. No magic ORM. No forced codegen. No string-concat sadness.
 
@@ -218,3 +235,7 @@ The examples in `examples/` compile and show the intended API shapes:
 - [`examples/partial_update`](examples/partial_update)
 - [`examples/raw_sql_codex`](examples/raw_sql_codex)
 - [`examples/scanning`](examples/scanning)
+
+## License
+
+Quarry is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for the full text.
