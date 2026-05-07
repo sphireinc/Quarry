@@ -25,7 +25,7 @@ Quarry is a SQL Composition Kit for Go.
 
 ## Project Status
 
-Quarry is a public v1.0.0 release. It is useful today for explicit SQL composition, dynamic filters, safe sorting, raw SQL fragments with bound arguments, and optional scanning helpers. The public API should stay small, explicit, and easy to reason about, and future changes should be intentional.
+Quarry is for explicit SQL composition, dynamic filters, safe sorting, raw SQL fragments with bound arguments, and optional scanning helpers. The public API should stay small, explicit, and easy to reason about, and future changes should be intentional.
 
 See [docs/status.md](docs/status.md) for an honest implementation snapshot, [CHANGELOG.md](CHANGELOG.md) for release history, [ROADMAP.md](ROADMAP.md) for the project direction, [docs/compatibility.md](docs/compatibility.md) for the compatibility policy, and [INTEGRATION.md](INTEGRATION.md) for an end-to-end walkthrough.
 
