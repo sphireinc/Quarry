@@ -155,13 +155,6 @@ func (c *Codex) MustRecipe(name string) StoredRecipe {
 	return recipe
 }
 
-type rawMode int
-
-const (
-	rawPositional rawMode = iota
-	rawNamed
-)
-
 // RawQuery stores a raw SQL template that can be bound later.
 // It keeps the SQL visible and leaves argument binding to the BoundRaw wrapper.
 type RawQuery struct {

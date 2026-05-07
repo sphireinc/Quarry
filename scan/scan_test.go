@@ -32,11 +32,6 @@ type nullableUser struct {
 	Status   sql.NullString `db:"status"`
 }
 
-type duplicateUser struct {
-	First  int `db:"id"`
-	Second int `db:"id"`
-}
-
 type unsupportedUser struct {
 	ID chan int `db:"id"`
 }
