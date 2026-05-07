@@ -25,13 +25,13 @@ It lets you write SQL-shaped Go, compose filters safely, bind args predictably, 
 
 No magic ORM. No forced codegen. No string-concat sadness.
 
-## Project Status
+## Why Quarry Exists
 
 Quarry is for Go developers who want to keep SQL explicit without hand-rolling fragile query strings.
 
 Use it to compose queries, add dynamic filters, map user-facing sort options safely, include raw SQL fragments with bound arguments, and scan results when you want a lightweight helper instead of a full ORM.
 
-The API is intentionally small. Quarry stays small, explicit, and hard to misuse. Every change must make SQL composition clearer, safer, or more reliable, not more magical.
+The API is intentionally small. Quarry stays explicit and hard to misuse. Every change must make SQL composition clearer, safer, or more reliable, not more magical.
 
 For more detail, see:
 
@@ -43,7 +43,7 @@ For more detail, see:
 
 The docs site lives under [docs/](docs/index.html).
 
-## What Quarry Is
+## What Quarry Does
 
 Quarry helps you build SQL with explicit Go code instead of brittle string concatenation.
 
@@ -52,9 +52,9 @@ Quarry helps you build SQL with explicit Go code instead of brittle string conca
 - Dialect-aware placeholder rendering for Postgres, MySQL, and SQLite
 - Dynamic predicates for optional filters and conditional clauses
 - Raw SQL fragments with bound arguments when you need to drop lower
-- Optional scanning and helpers for lightweight result handling and reusable query recipes
+- Optional scanning and Codex helpers for lightweight result handling and reusable query recipes
 
-## What Quarry Is Not
+## What Quarry Does Not Do
 
 Quarry is intentionally narrow. It helps compose SQL; it does not try to become your entire database layer.
 
@@ -110,19 +110,23 @@ go get github.com/sphireinc/quarry
 ## Quick Start
 
 ```go
-qq := quarry.New(quarry.Postgres)
+package main
 
-q := qq.Select("id", "email").
-	From("users").
-	Where(quarry.Eq("status", "active"))
+import "github.com/sphireinc/quarry"
 
-sql, args, err := q.ToSQL()
-if err != nil {
-	panic(err)
+func main() {
+	qq := quarry.New(quarry.Postgres)
+
+	query := qq.Select("id", "email").From("users").Where(quarry.Eq("status", "active"))
+
+	sql, args, err := query.ToSQL()
+	if err != nil {
+		panic(err)
+	}
 }
 
-// SELECT id, email FROM users WHERE status = $1
-// []any{"active"}
+// var:sql  = SELECT id, email FROM users WHERE status = $1
+// var:args = []any{"active"}
 ```
 
 ## Dynamic Filters
@@ -196,7 +200,7 @@ Raw `?` placeholders are rewritten for the target dialect. The placeholder scann
 
 Codex is Quarry's optional registry for reusable named queries and SQL-shaped recipes.
 
-It stays close to SQL, keeps arguments bound, and has absolutely nothing to do with OpenAI's Codex :) (please don't sue me)
+It stays close to SQL, keeps arguments bound, and is unrelated to OpenAI Codex. Different Codex. Fewer lawyers, hopefully.
 
 ```go
 cx := codex.New()
@@ -224,7 +228,7 @@ if err != nil {
 }
 ```
 
-## Scanning and Hydration
+## Scanning
 
 Quarry includes a small optional `scan` package for scanning query results into Go structs, slices, and scalar values.
 
@@ -270,22 +274,42 @@ See [docs/compatibility.md](docs/compatibility.md) for versioning and compatibil
 
 Squirrel proved that explicit SQL composition is useful. Quarry follows that same general shape, but it is not built on Squirrel.
 
-If you know Squirrel, Quarry should feel familiar:
+If you know Squirrel, Quarry should feel familiar: fluent builders, visible SQL, and predictable `sql, args` output.
+
+### Basic code comparison
 
 ```go
-// Squirrel-style sketch:
-// q := sq.Select("id", "email").From("users").Where(sq.Eq{"status": "active"})
+// Squirrel:
+q := sq.Select("id", "email").From("users").Where(sq.Eq{"status": "active"})
 
 // Quarry:
 q := qq.Select("id", "email").From("users").Where(quarry.Eq("status", "active"))
 ```
 
-The differences are intentional:
+
+| Area              | Squirrel                                    | Quarry                                                  |
+|-------------------|---------------------------------------------|---------------------------------------------------------|
+| Core identity     | Fluent SQL generator                        | SQL composition toolkit                                 | 
+| ORM?              | No                                          | No                                                      |
+| Dynamic filters   | Possible, but user assembles the patterns   | First-class optional predicates                         |
+| Safe sorting      | Mostly user-managed                         | `OrderBySafe` and `OrderBySafeDefault`                  |
+| Dialect behavior  | Placeholder formats exist                   | Explicit dialect policy and docs                        |
+| Identifier safety | Less central to the positioning             | Core part of the safety model                           |
+| Raw SQL           | Supported through expressions and fragments | Explicit escape hatch with bound args and scanner rules |
+| Scanning          | Not the main thing                          | Optional lightweight `scan` package                     |                   
+| Named recipes     | Not the main thing                          | Optional `Codex` layer                                  |                      
+| Project posture   | Mature ecosystem staple                     | Newer, docs-first, safety-first toolkit                 |
+
+
+Quarry is conceptually close to Squirrel, but the differences are intentional:
 
 - Quarry emphasizes dialect policy and identifier safety.
 - Quarry has first-class optional predicates for dynamic filters.
+- Quarry maps user-facing sort options to trusted SQL fragments.
 - Quarry keeps raw SQL explicit and available.
 - Quarry treats scanning and Codex as optional layers, not core magic.
+
+The point is not to pretend Quarry invented fluent SQL composition. It did not. The point is to make the safety boundaries, dialect behavior, dynamic assembly patterns, and optional helper layers clearer from the start.
 
 For a broader comparison with raw SQL, Squirrel, sqlc, GORM, and sqlx, see [docs/comparison.md](docs/comparison.md).
 
@@ -293,7 +317,7 @@ For a broader comparison with raw SQL, Squirrel, sqlc, GORM, and sqlx, see [docs
 
 Quarry is useful today for explicit SQL composition, dynamic filters, safe sorting, raw SQL fragments with bound arguments, and optional scanning helpers.
 
-See [docs/status.md](docs/status.md) for the current implementation snapshot, [CHANGELOG.md](CHANGELOG.md) for release history, and [ROADMAP.md](ROADMAP.md) for the direction Quarry is taking, and the directions it is intentionally avoiding.
+See [docs/status.md](docs/status.md) for the current implementation snapshot, [CHANGELOG.md](CHANGELOG.md) for release history, and [ROADMAP.md](ROADMAP.md) for where Quarry is headed, and where it intentionally is not.
 
 ## Examples
 
