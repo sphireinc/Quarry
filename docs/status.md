@@ -14,8 +14,8 @@ Quarry is a public v1.0.0 release. The documented API is intentionally small, ex
 - Raw SQL placeholder parsing with comment, string, and dollar-quote awareness.
 - Core `Select`, `InsertInto`, `Update`, and `DeleteFrom` builders with joins, grouping, maps, and multi-row inserts.
 - Dynamic predicates, optional filter helpers, tuple `IN`, `ANY`, `BETWEEN`, and `EXISTS` / `NOT EXISTS`.
-- Separate `quarry/scan` execution helpers with forgiving struct hydration, tag fallback, pointer/null support, and nil guards.
-- Separate `quarry/hydra` compatibility wrapper.
+- Separate `quarry/scan` execution helpers with forgiving struct scanning, tag fallback, pointer/null support, and nil guards.
+- Standalone `github.com/sphireinc/Hydra` remains the richer hydration companion outside Quarry.
 - Separate `quarry/codex` registry for raw queries and recipes.
 - Hardened named query store with deterministic lookup, name validation, and optional strict parameter checking.
 - README, integration guide, examples, comparison notes, package map, and Squirrel migration notes.

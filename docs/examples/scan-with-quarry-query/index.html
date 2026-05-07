@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Scan with Quarry query example for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Scan with Quarry query - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="scan-with-quarry-query">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Scan with Quarry Query</h1>
+                <p class="lead">
+                  Quarry builds the SQL. The scan layer runs it and pulls the scalar result out of
+                  the row without introducing a bigger abstraction.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>The query</h2>
+            <pre><code>func ActiveUserCount(qq *quarry.Quarry) quarry.SQLer {
+    return qq.Select(quarry.Raw("COUNT(*)")).
+        From("users").
+        Where(quarry.Eq("status", "active"))
+}</code></pre>
+            <p>
+              The query stays a Quarry value all the way until execution. That keeps the SQL shape
+              explicit and the result contract easy to read.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Run it through scan</h2>
+            <pre><code>count, err := scan.One[int64](ctx, db, ActiveUserCount(qq))
+if err != nil {
+    return err
+}
+
+fmt.Println(count)</code></pre>
+            <div class="callout info">
+              <strong>Why this example matters</strong>
+              This is the thin path Quarry is for: build SQL explicitly, execute it through
+              <code>database/sql</code>, and scan a result without pulling in a bigger row-mapping
+              framework.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>What the SQL looks like</h2>
+            <pre><code>SELECT COUNT(*)
+FROM users
+WHERE status = ?</code></pre>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the scan package contract, see
+              <a href="../../reference/scan/">Scan</a> and
+              <a href="../../scan.md">docs/scan.md</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

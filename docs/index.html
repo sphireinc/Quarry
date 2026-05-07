@@ -84,7 +84,7 @@
               </a>
               <a class="nav-link" href="reference/scan/">
                 <strong>Scan</strong>
-                <span>database/sql execution and hydration helpers.</span>
+                <span>database/sql execution and scanning helpers.</span>
               </a>
               <a class="nav-link" href="reference/dialects/">
                 <strong>Dialects</strong>
@@ -131,9 +131,17 @@
                 <strong>Raw SQL and recipes</strong>
                 <span>Escape hatches and reusable queries.</span>
               </a>
-              <a class="nav-link" href="examples/scanning/">
-                <strong>Scanning</strong>
-                <span>Hydrate results without an ORM.</span>
+              <a class="nav-link" href="examples/scan-one/">
+                <strong>Scan one row</strong>
+                <span>Scan a single struct row with clear contracts.</span>
+              </a>
+              <a class="nav-link" href="examples/scan-many/">
+                <strong>Scan many rows</strong>
+                <span>Scan slices of structs from a result set.</span>
+              </a>
+              <a class="nav-link" href="examples/scan-with-quarry-query/">
+                <strong>Scan with Quarry query</strong>
+                <span>Use Quarry builders, then scan the result.</span>
               </a>
               <a class="nav-link" href="examples/cross-dialect/">
                 <strong>Cross-dialect notes</strong>
@@ -232,7 +240,7 @@ sql, args, err := q.ToSQL()</code></pre>
               </div>
               <div class="card">
                 <h3>Codex and Scan</h3>
-                <p>Use reusable raw queries, recipes, and hydration helpers when the query surface gets larger.</p>
+                <p>Use reusable raw queries, recipes, and scanning helpers when the query surface gets larger.</p>
                 <a class="note-link" href="reference/codex/">Explore Codex →</a>
               </div>
               <div class="card">

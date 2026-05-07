@@ -46,7 +46,7 @@
                 <h1>Scanning Helpers</h1>
                 <p class="lead">
                   The scan package is optional. It executes Quarry queries with database/sql and
-                  hydrates results into structs or scalar types with predictable error handling.
+                  scans results into structs or scalar types with predictable error handling.
                 </p>
               </div>
               <div class="hero-card">
@@ -72,13 +72,13 @@
               </div>
               <div class="card">
                 <h3><code>scan.One</code>, <code>MaybeOne</code>, <code>All</code></h3>
-                <p>Hydrate one row, zero-or-one rows, or every row into Go values.</p>
+                <p>Scan one row, zero-or-one rows, or every row into Go values.</p>
               </div>
             </div>
           </section>
 
           <section class="section">
-            <h2>Hydration behavior</h2>
+            <h2>Result mapping</h2>
             <ul class="feature-list">
               <li><code>db</code> tags win first, then <code>json</code>, then snake_case.</li>
               <li>Unknown columns are ignored.</li>
@@ -95,10 +95,11 @@
           </section>
 
           <section class="section">
-            <h2>Hydra compatibility</h2>
+            <h2>Hydra stays external</h2>
             <p>
-              The <code>hydra</code> package remains a thin wrapper over <code>scan</code> so projects
-              can keep a familiar import path without pulling scanning logic into the core package.
+              Quarry keeps only the small scanning surface in-tree. For richer hydration workflows,
+              use the standalone <a href="../../hydra.md">Hydra integration note</a> and the
+              external <a href="https://github.com/sphireinc/Hydra">Hydra project</a>.
             </p>
           </section>
 
@@ -115,7 +116,8 @@
             <p>
               The scan tests in
               <a href="https://github.com/sphireinc/quarry/blob/main/scan/scan_test.go">scan/scan_test.go</a>
-              show the supported behavior in detail.
+              and the package note in <a href="../../scan.md">docs/scan.md</a> show the supported
+              behavior in detail.
             </p>
           </footer>
         </article>

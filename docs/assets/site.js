@@ -58,7 +58,7 @@ const NAV = [
         page: "scan",
         href: "reference/scan/",
         title: "Scan",
-        description: "database/sql execution and hydration helpers.",
+        description: "database/sql execution and scanning helpers.",
       },
       {
         page: "dialects",
@@ -126,10 +126,22 @@ const NAV = [
         description: "Escape hatches and reusable queries.",
       },
       {
-        page: "scanning",
-        href: "examples/scanning/",
-        title: "Scanning",
-        description: "Hydrate results without an ORM.",
+        page: "scan-one",
+        href: "examples/scan-one/",
+        title: "Scan one row",
+        description: "Scan a single struct row with clear contracts.",
+      },
+      {
+        page: "scan-many",
+        href: "examples/scan-many/",
+        title: "Scan many rows",
+        description: "Scan slices of structs from a result set.",
+      },
+      {
+        page: "scan-with-quarry-query",
+        href: "examples/scan-with-quarry-query/",
+        title: "Scan with Quarry query",
+        description: "Use Quarry builders, then scan the result.",
       },
       {
         page: "cross-dialect",

@@ -200,9 +200,10 @@ if err != nil {
 }
 ```
 
-## Scanning / Hydration
+## Scanning and Hydration
 
-The scan layer is optional.
+Quarry includes a small optional `scan` package for scanning query results into Go structs or
+scalar values.
 
 ```go
 users, err := scan.All[User](ctx, db, q)
@@ -215,6 +216,14 @@ It supports:
 - snake_case fallback
 - pointers and nullable values
 - forgiving unknown columns
+
+For Quarry's scan contract, see [docs/scan.md](docs/scan.md).
+For richer hydration workflows, use the standalone
+[`github.com/sphireinc/Hydra`](https://github.com/sphireinc/Hydra) project and the companion
+[docs/hydra.md](docs/hydra.md) note.
+
+Quarry itself does not infer schemas, generate CRUD operations, track entities, or manage
+relationships.
 
 ## Dialects
 
@@ -277,7 +286,9 @@ The examples in `examples/` compile and show the intended API shapes:
 - [`examples/dynamic_filters`](examples/dynamic_filters)
 - [`examples/partial_update`](examples/partial_update)
 - [`examples/raw_sql_codex`](examples/raw_sql_codex)
-- [`examples/scanning`](examples/scanning)
+- [`examples/scan_one`](examples/scan_one)
+- [`examples/scan_many`](examples/scan_many)
+- [`examples/scan_with_quarry_query`](examples/scan_with_quarry_query)
 
 ## License
 

@@ -7,7 +7,7 @@
 - Hardened the Makefile and CI checks, including example verification and race coverage.
 - Expanded examples into longer product-style walkthroughs.
 - Added and strengthened safety, dialect, scan, Codex, and public API tests.
-- Clarified the optional `scan`, `hydra`, and `codex` package surfaces.
+- Clarified the optional `scan` and `codex` package surfaces, and documented standalone Hydra as an external companion.
 
 ## v1.0.0
 - Initial public release of Quarry.

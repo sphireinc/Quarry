@@ -34,10 +34,7 @@ func captureStdout(t *testing.T, fn func()) string {
 
 func TestMain(t *testing.T) {
 	out := captureStdout(t, main)
-	if !strings.Contains(out, "a@example.com") {
-		t.Fatalf("unexpected output: %s", out)
-	}
-	if !strings.Contains(out, "active") {
+	if !strings.Contains(out, "3") {
 		t.Fatalf("unexpected output: %s", out)
 	}
 }
@@ -45,5 +42,5 @@ func TestMain(t *testing.T) {
 func ExampleMain() {
 	main()
 	// Output:
-	// [{1 a@example.com active}]
+	// 3
 }

@@ -97,8 +97,8 @@ func All[T any](ctx context.Context, db Queryer, q quarry.SQLer) ([]T, error) {
 	return values, nil
 }
 
-// collectAll reads every row from the result set and hydrates them into T values.
-// The helper keeps row iteration separate from the hydration logic so the behavior is easy to test.
+// collectAll reads every row from the result set and scans them into T values.
+// The helper keeps row iteration separate from the row-mapping logic so the behavior is easy to test.
 func collectAll[T any](rows *sql.Rows) ([]T, error) {
 	columns, err := rows.Columns()
 	if err != nil {
@@ -119,7 +119,7 @@ func collectAll[T any](rows *sql.Rows) ([]T, error) {
 	return out, nil
 }
 
-// scanRow hydrates a single row into either a struct or a scalar value.
+// scanRow scans a single row into either a struct or a scalar value.
 // Structs are matched by column name; scalars are scanned directly.
 func scanRow[T any](rows *sql.Rows, columns []string) (T, error) {
 	var zero T

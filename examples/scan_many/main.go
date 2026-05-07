@@ -1,4 +1,4 @@
-// Package main prints a Quarry query scanned into Go structs.
+// Package main prints many Quarry rows scanned into Go structs.
 package main
 
 import (
@@ -19,7 +19,7 @@ type User struct {
 	Status string `db:"status"`
 }
 
-const driverName = "quarry-example-scan"
+const driverName = "quarry-example-scan-many"
 
 func init() {
 	sql.Register(driverName, exampleDriver{})
@@ -34,7 +34,11 @@ func main() {
 	defer db.Close()
 
 	qq := quarry.New(quarry.SQLite)
-	users, err := scan.All[User](ctx, db, qq.Select("id", "email", "status").From("users").OrderBy("id ASC"))
+	users, err := scan.All[User](ctx, db,
+		qq.Select("id", "email", "status").
+			From("users").
+			OrderBy("id ASC"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -70,6 +74,7 @@ func (exampleConn) QueryContext(_ context.Context, query string, _ []driver.Name
 		columns: []string{"id", "email", "status"},
 		data: [][]driver.Value{
 			{int64(1), "a@example.com", "active"},
+			{int64(2), "b@example.com", "inactive"},
 		},
 	}, nil
 }
