@@ -29,7 +29,7 @@
         <div class="topbar-spacer"></div>
         <div class="toolbar">
           <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
-          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
         </div>
       </header>
 
@@ -45,8 +45,9 @@
                 <div class="eyebrow">Reference</div>
                 <h1>Codex and Recipes</h1>
                 <p class="lead">
-                  Store raw SQL templates, bind parameters safely, or register typed recipes for
-                  repeated Quarry builders.
+                  Quarry Codex is the optional named-query and recipe registry. It stores raw SQL
+                  templates, binds parameters safely, and keeps repeated Quarry builders close to
+                  the SQL they represent.
                 </p>
               </div>
               <div class="hero-card">
@@ -114,6 +115,11 @@ if err != nil {
               Recipe builds return <code>(quarry.SQLer, error)</code>. The API prefers errors over panic
               in normal use.
             </div>
+            <div class="callout info">
+              <strong>What Codex is doing here</strong>
+              Codex is not executing SQL and it is not replacing Quarry builders. It stores reusable
+              SQL shapes and recipe functions that still return Quarry queries.
+            </div>
           </section>
 
           <section class="section">
@@ -134,10 +140,29 @@ if err != nil {
             </div>
           </section>
 
+          <section class="section">
+            <h2>When to use Codex</h2>
+            <ul class="feature-list">
+              <li>You want a stable name for a query shape that gets reused in more than one place.</li>
+              <li>You want raw SQL to stay visible, but you still want named binding or a typed recipe wrapper.</li>
+              <li>You want a light registry, not an execution framework or repository layer.</li>
+            </ul>
+          </section>
+
+          <section class="section">
+            <h2>When not to use Codex</h2>
+            <ul class="feature-list">
+              <li>You need query execution, transactions, or connection management.</li>
+              <li>You want relation loading, entity tracking, or schema-aware behavior.</li>
+              <li>You are trying to hide SQL instead of keep it obvious.</li>
+            </ul>
+          </section>
+
           <footer class="site-footer">
             <p>
               For the current implementation details, see
-              <a href="https://github.com/sphireinc/Quarry/blob/main/INTEGRATION.md">INTEGRATION.md</a>.
+              <a href="https://github.com/sphireinc/quarry/blob/main/INTEGRATION.md">INTEGRATION.md</a>
+              and the <a href="../../compatibility.md">compatibility policy</a>.
             </p>
           </footer>
         </article>

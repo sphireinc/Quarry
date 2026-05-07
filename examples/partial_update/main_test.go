@@ -47,3 +47,10 @@ func TestMain(t *testing.T) {
 		t.Fatalf("unexpected args output: %s", out)
 	}
 }
+
+func ExampleMain() {
+	main()
+	// Output:
+	// UPDATE users SET name = $1, email = $2, enabled = $3 WHERE id = $4 RETURNING id
+	// [Quarry User user@example.com true 7]
+}

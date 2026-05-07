@@ -1,3 +1,8 @@
+// Package scan executes Quarry queries and scans rows into Go values.
+//
+// The package is optional and intentionally smaller than an ORM. It covers the
+// common "run this SQL and scan the result" case without adding entity
+// tracking, relationship loading, or generated query code.
 package scan
 
 import (

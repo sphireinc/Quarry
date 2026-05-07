@@ -7,6 +7,10 @@ import (
 	"github.com/sphireinc/quarry/internal/rawsql"
 )
 
+// Expr is the minimal contract for SQL fragments Quarry can render.
+//
+// It stays unexported in practice because only Quarry's own expression types
+// can satisfy the interface.
 type Expr interface {
 	appendSQL(*sqlBuilder) error
 }

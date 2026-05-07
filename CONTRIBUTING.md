@@ -20,11 +20,22 @@ make check
 The main targets are:
 
 - `make fmt`
+- `make fmt-write`
 - `make vet`
 - `make test`
-- `make race`
+- `make test-race`
+- `make examples`
+- `make staticcheck`
+- `make vulncheck`
 - `make tidy`
 - `make distcheck`
+
+`make fmt` checks formatting and fails on drift. Use `make fmt-write` if you want
+to rewrite the files in place.
+
+`make vet` runs on the non-integration package set so it stays lightweight and
+does not chase the SQLite-only test dependencies used by the scan and hydra
+packages. `make test` still covers those packages.
 
 ## Adding Dialect Behavior
 

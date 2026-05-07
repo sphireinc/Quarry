@@ -29,7 +29,7 @@
         <div class="topbar-spacer"></div>
         <div class="toolbar">
           <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
-          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
         </div>
       </header>
 
@@ -122,7 +122,7 @@ func BuildFeedQuery(qq *quarry.Quarry, req FeedRequest) quarry.SQLer {
           </section>
 
           <section class="section">
-            <h2>Hydrate the rows</h2>
+            <h2>Scan the rows</h2>
             <pre><code>type FeedItem struct {
     ID        int64      `db:"id"`
     Title     string     `db:"title"`

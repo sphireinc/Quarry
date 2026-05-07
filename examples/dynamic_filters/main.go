@@ -1,3 +1,4 @@
+// Package main prints a Quarry query with optional filters and safe paging.
 package main
 
 import (

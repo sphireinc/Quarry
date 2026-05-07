@@ -29,10 +29,10 @@ jobs:
           cache: true
 
       - name: Vet
-        run: go vet ./...
+        run: make vet
 
       - name: Test
-        run: go test ./...
+        run: make test
 
   verify:
     name: linux / verification
@@ -50,8 +50,17 @@ jobs:
       - name: Check
         run: make check
 
+      - name: Examples
+        run: make examples
+
+      - name: Staticcheck
+        run: make staticcheck
+
+      - name: Vulnerability Check
+        run: make vulncheck
+
       - name: Distcheck
         run: make distcheck
 
       - name: Race
-        run: go test -race ./...
+        run: make test-race

@@ -1,3 +1,4 @@
+// Package main prints a minimal Quarry SELECT query.
 package main
 
 import (

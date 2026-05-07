@@ -426,6 +426,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 		name string
 		pred Predicate
 	}{
+		{name: "eq_nil_pointer", pred: OptionalEq("status", (*string)(nil))},
 		{name: "neq_empty", pred: OptionalNeq("status", "")},
 		{name: "gt_empty", pred: OptionalGt("age", nil)},
 		{name: "gte_empty", pred: OptionalGte("score", (*int)(nil))},
@@ -585,4 +586,73 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if got := sb.String(); got != "NOT (id = $1)" {
 		t.Fatalf("unexpected not output: %q", got)
 	}
+}
+
+func TestSafetyAndDialectEdgeCases(t *testing.T) {
+	t.Run("identifier_edge_cases", func(t *testing.T) {
+		for _, ident := range []string{"users.id", `"users"`, "public.users"} {
+			if err := validateIdentifier(ident); !errors.Is(err, ErrInvalidIdentifier) {
+				t.Fatalf("expected invalid identifier for %q, got %v", ident, err)
+			}
+		}
+
+		sqlText, args, err := New(Postgres).Select("users.id").From("users").ToSQL()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if sqlText != "SELECT users.id FROM users" {
+			t.Fatalf("unexpected raw identifier output: %q", sqlText)
+		}
+		if len(args) != 0 {
+			t.Fatalf("expected no args, got %#v", args)
+		}
+	})
+
+	t.Run("safe_sort_rejects_unknown_input", func(t *testing.T) {
+		sqlText, args, err := New(Postgres).Select("*").From("users").OrderBySafe("email; DROP TABLE users", SortMap{
+			"newest": "created_at DESC",
+		}).ToSQL()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if sqlText != "SELECT * FROM users" {
+			t.Fatalf("unexpected sql: %q", sqlText)
+		}
+		if len(args) != 0 {
+			t.Fatalf("expected no args, got %#v", args)
+		}
+		if strings.Contains(sqlText, "DROP TABLE") {
+			t.Fatalf("unsafe input leaked into sql: %q", sqlText)
+		}
+	})
+
+	t.Run("page_normalization_negative", func(t *testing.T) {
+		for _, d := range []Dialect{Postgres, MySQL, SQLite} {
+			sqlText, args, err := New(d).Select("*").From("users").Page(-4, -20).ToSQL()
+			if err != nil {
+				t.Fatalf("unexpected error for %s: %v", d, err)
+			}
+			if sqlText != "SELECT * FROM users LIMIT 50 OFFSET 0" {
+				t.Fatalf("unexpected sql for %s: %q", d, sqlText)
+			}
+			if len(args) != 0 {
+				t.Fatalf("expected no args for %s, got %#v", d, args)
+			}
+		}
+	})
+
+	t.Run("delete_without_where", func(t *testing.T) {
+		for _, d := range []Dialect{Postgres, MySQL, SQLite} {
+			sqlText, args, err := New(d).DeleteFrom("users").ToSQL()
+			if err != nil {
+				t.Fatalf("unexpected error for %s: %v", d, err)
+			}
+			if sqlText != "DELETE FROM users" {
+				t.Fatalf("unexpected sql for %s: %q", d, sqlText)
+			}
+			if len(args) != 0 {
+				t.Fatalf("expected no args for %s, got %#v", d, args)
+			}
+		}
+	})
 }

@@ -1,3 +1,7 @@
+// Package codex provides Quarry's optional named-query and recipe registry.
+//
+// Codex keeps raw SQL visible while giving reusable names to templates and
+// builder recipes. It does not execute SQL or replace Quarry's core builders.
 package codex
 
 import (
@@ -9,18 +13,21 @@ import (
 	"github.com/sphireinc/quarry/internal/rawsql"
 )
 
-// StoredQuery is the shared interface for named registry entries.
+// StoredQuery is the shared registry contract for named raw queries and recipes.
+// It stays intentionally small so callers can store either raw SQL templates or recipe wrappers.
 type StoredQuery interface {
 	Name() string
 }
 
-// StoredRecipe is a named query that can be built from Quarry inputs.
+// StoredRecipe is a named recipe that can build Quarry SQL from a parameter value.
+// The registry stores recipes alongside raw templates without turning Codex into a general framework.
 type StoredRecipe interface {
 	StoredQuery
 	Build(*quarry.Quarry, any) (quarry.SQLer, error)
 }
 
 // Codex stores named raw queries and recipes in one registry.
+// It is an optional layer for reuse; it does not try to own query execution or relation loading.
 type Codex struct {
 	queries map[string]StoredQuery
 }
@@ -30,7 +37,7 @@ func New() *Codex {
 	return &Codex{queries: make(map[string]StoredQuery)}
 }
 
-// Add stores a query after validating the name and duplicate state.
+// Add stores a named raw query or recipe after validating the name and duplicate state.
 func (c *Codex) Add(name string, q StoredQuery) error {
 	if c == nil {
 		return fmt.Errorf("quarry codex: nil codex")
@@ -74,11 +81,13 @@ func (c *Codex) RawNamed(name, sql string) error {
 }
 
 // AddRaw stores a positional raw template that uses `?` placeholders.
+// The template remains raw SQL, with only placeholder rewriting handled by Quarry.
 func (c *Codex) AddRaw(name, sql string) error {
 	return c.Add(name, RawQuery{name: name, sql: sql})
 }
 
 // AddRawNamed stores a named raw template that uses `:name` placeholders.
+// Named templates are useful when the SQL is clearer than a builder but args still need binding.
 func (c *Codex) AddRawNamed(name, sql string) error {
 	return c.Add(name, RawQuery{name: name, sql: sql, named: true})
 }
@@ -89,6 +98,7 @@ func (c *Codex) Recipe(name string, recipe any) error {
 }
 
 // AddRecipe stores either a typed recipe wrapper or a function value.
+// Recipes are intentionally just SQL-producing helpers; callers still decide when and how to execute them.
 func (c *Codex) AddRecipe(name string, recipe any) error {
 	if c == nil {
 		return fmt.Errorf("quarry codex: nil codex")
@@ -113,6 +123,7 @@ func (c *Codex) AddRecipe(name string, recipe any) error {
 }
 
 // MustRaw returns a raw query and panics if the registry entry is missing or not raw.
+// This is the explicit panic-only path; normal code should prefer Add/Get and handle errors.
 func (c *Codex) MustRaw(name string) RawQuery {
 	q, ok := c.Get(name)
 	if !ok {
@@ -131,6 +142,7 @@ func (c *Codex) Must(name string) RawQuery {
 }
 
 // MustRecipe returns a recipe and panics if the registry entry is missing or not a recipe.
+// It mirrors MustRaw for users who prefer the shorter panic-based lookup.
 func (c *Codex) MustRecipe(name string) StoredRecipe {
 	q, ok := c.Get(name)
 	if !ok {
@@ -143,14 +155,8 @@ func (c *Codex) MustRecipe(name string) StoredRecipe {
 	return recipe
 }
 
-type rawMode int
-
-const (
-	rawPositional rawMode = iota
-	rawNamed
-)
-
 // RawQuery stores a raw SQL template that can be bound later.
+// It keeps the SQL visible and leaves argument binding to the BoundRaw wrapper.
 type RawQuery struct {
 	name   string
 	sql    string
@@ -164,6 +170,7 @@ func (r RawQuery) Name() string {
 }
 
 // With binds the template to a Quarry dialect before arguments are supplied.
+// The dialect controls placeholder rendering while the raw SQL text stays intact.
 func (r RawQuery) With(qq *quarry.Quarry) *BoundRaw {
 	b := &BoundRaw{template: r}
 	if qq == nil {
@@ -183,6 +190,7 @@ const (
 )
 
 // BoundRaw is a raw template bound to a specific dialect and argument set.
+// It is the point where raw text becomes a fully bound Quarry query.
 type BoundRaw struct {
 	template RawQuery
 	dialect  quarry.Dialect
@@ -201,6 +209,7 @@ func (b *BoundRaw) Name() string {
 }
 
 // Bind supplies positional arguments for a `?`-based raw query.
+// Positional binding keeps the call site simple when the SQL already has the right shape.
 func (b *BoundRaw) Bind(args ...any) *BoundRaw {
 	if b == nil {
 		return nil
@@ -213,6 +222,7 @@ func (b *BoundRaw) Bind(args ...any) *BoundRaw {
 }
 
 // BindMap supplies named arguments for a `:name`-based raw query.
+// Named binding is explicit and keeps user-controlled values separate from the SQL text.
 func (b *BoundRaw) BindMap(values map[string]any) *BoundRaw {
 	if b == nil {
 		return nil
@@ -225,6 +235,7 @@ func (b *BoundRaw) BindMap(values map[string]any) *BoundRaw {
 }
 
 // BindStruct extracts named arguments from a struct before binding them.
+// It follows the same db/json/snake_case rules as the scan package.
 func (b *BoundRaw) BindStruct(v any) *BoundRaw {
 	if b == nil {
 		return nil
@@ -238,6 +249,7 @@ func (b *BoundRaw) BindStruct(v any) *BoundRaw {
 }
 
 // ToSQL rewrites the raw query using the bound dialect and arguments.
+// The method returns explicit errors for unsupported dialects, bad bindings, and placeholder mismatches.
 func (b *BoundRaw) ToSQL() (string, []any, error) {
 	if b == nil {
 		return "", nil, fmt.Errorf("quarry codex: nil bound raw query")
@@ -276,9 +288,11 @@ func (b *BoundRaw) ToSQL() (string, []any, error) {
 }
 
 // RecipeFunc is the typed builder signature accepted by recipe wrappers.
+// Recipes receive a Quarry and a typed parameter value and must return a SQLer, not execute anything.
 type RecipeFunc[P any] func(*quarry.Quarry, P) quarry.SQLer
 
 // Recipe stores a typed recipe function without forcing registry registration.
+// It is the small, explicit recipe form Quarry uses for reusable SQL composition.
 type Recipe[P any] struct {
 	fn RecipeFunc[P]
 }
@@ -289,6 +303,7 @@ func NewRecipe[P any](fn RecipeFunc[P]) Recipe[P] {
 }
 
 // Build invokes the typed recipe directly.
+// Normal use returns an error instead of panicking so callers can keep recipe failures explicit.
 func (r Recipe[P]) Build(qq *quarry.Quarry, p P) (quarry.SQLer, error) {
 	if r.fn == nil {
 		return nil, fmt.Errorf("quarry codex: recipe is nil")
@@ -320,6 +335,7 @@ func (r namedRecipe[P]) Name() string {
 }
 
 // Build invokes the typed recipe and returns helpful errors for invalid input.
+// The method is strict on the parameter type so the registry remains easy to reason about.
 func (r namedRecipe[P]) Build(qq *quarry.Quarry, params any) (quarry.SQLer, error) {
 	if r.fn == nil {
 		return nil, fmt.Errorf("quarry codex: recipe %q is nil", r.name)
@@ -348,6 +364,7 @@ func (r reflectedRecipe) Name() string {
 }
 
 // Build validates the function shape at runtime and then invokes it.
+// This keeps the registry flexible for small helper functions without hiding the shape from callers.
 func (r reflectedRecipe) Build(qq *quarry.Quarry, params any) (quarry.SQLer, error) {
 	if !r.fn.IsValid() {
 		return nil, fmt.Errorf("quarry codex: recipe %q is nil", r.name)
@@ -404,6 +421,7 @@ func placeholderFor(d quarry.Dialect, n int) string {
 }
 
 // structToMap extracts bind values from a struct using the documented tag precedence.
+// The precedence is db, then json, then snake_case, which matches the scan package.
 func structToMap(v any) (map[string]any, error) {
 	if v == nil {
 		return nil, fmt.Errorf("quarry codex: struct binding requires a value")

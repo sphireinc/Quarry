@@ -34,20 +34,16 @@ func captureStdout(t *testing.T, fn func()) string {
 
 func TestMain(t *testing.T) {
 	out := captureStdout(t, main)
-	if !strings.Contains(out, "SELECT id, email, created_at FROM users WHERE tenant_id = $1") {
+	if !strings.Contains(out, "a@example.com") {
 		t.Fatalf("unexpected output: %s", out)
 	}
-	if !strings.Contains(out, "ORDER BY created_at DESC LIMIT 25 OFFSET 0") {
+	if !strings.Contains(out, "active") {
 		t.Fatalf("unexpected output: %s", out)
-	}
-	if !strings.Contains(out, "%bob%") {
-		t.Fatalf("unexpected args output: %s", out)
 	}
 }
 
 func ExampleMain() {
 	main()
 	// Output:
-	// SELECT id, email, created_at FROM users WHERE tenant_id = $1 AND (email ILIKE $2 OR name ILIKE $3) ORDER BY created_at DESC LIMIT 25 OFFSET 0
-	// [42 %bob% %bob%]
+	// {1 a@example.com active}
 }

@@ -29,7 +29,7 @@
         <div class="topbar-spacer"></div>
         <div class="toolbar">
           <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
-          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
         </div>
       </header>
 
@@ -45,8 +45,8 @@
                 <div class="eyebrow">Reference</div>
                 <h1>Scanning Helpers</h1>
                 <p class="lead">
-                  The scan package executes Quarry queries with database/sql and hydrates results into
-                  structs or scalar types with predictable error handling.
+                  The scan package is optional. It executes Quarry queries with database/sql and
+                  scans results into structs or scalar types with predictable error handling.
                 </p>
               </div>
               <div class="hero-card">
@@ -72,18 +72,19 @@
               </div>
               <div class="card">
                 <h3><code>scan.One</code>, <code>MaybeOne</code>, <code>All</code></h3>
-                <p>Hydrate one row, zero-or-one rows, or every row into Go values.</p>
+                <p>Scan one row, zero-or-one rows, or every row into Go values.</p>
               </div>
             </div>
           </section>
 
           <section class="section">
-            <h2>Hydration behavior</h2>
+            <h2>Result mapping</h2>
             <ul class="feature-list">
               <li><code>db</code> tags win first, then <code>json</code>, then snake_case.</li>
               <li>Unknown columns are ignored.</li>
               <li>Pointer fields and <code>sql.Null*</code> types are supported.</li>
               <li>Nil inputs and bad builder states return errors instead of panicking.</li>
+              <li>Pointer type parameters are rejected; use struct or scalar target types.</li>
             </ul>
             <pre><code>type User struct {
     ID        int            `db:"id"`
@@ -94,18 +95,29 @@
           </section>
 
           <section class="section">
-            <h2>Hydra compatibility</h2>
+            <h2>Hydra stays external</h2>
             <p>
-              The <code>hydra</code> package remains a thin wrapper over <code>scan</code> so projects
-              can keep a familiar import path without pulling scanning logic into the core package.
+              Quarry keeps only the small scanning surface in-tree. For richer hydration workflows,
+              use the standalone <a href="../../hydra.md">Hydra integration note</a> and the
+              external <a href="https://github.com/sphireinc/Hydra">Hydra project</a>.
             </p>
+          </section>
+
+          <section class="section">
+            <h2>Limitations</h2>
+            <ul class="feature-list">
+              <li>Scan is not an ORM. It does not load relationships or track entities.</li>
+              <li>Columns are matched by name, not by schema metadata.</li>
+              <li>Destination values must be pointers, scalars, or supported nullable types.</li>
+            </ul>
           </section>
 
           <footer class="site-footer">
             <p>
               The scan tests in
-              <a href="https://github.com/sphireinc/Quarry/blob/main/scan/scan_test.go">scan/scan_test.go</a>
-              show the supported behavior in detail.
+              <a href="https://github.com/sphireinc/quarry/blob/main/scan/scan_test.go">scan/scan_test.go</a>
+              and the package note in <a href="../../scan.md">docs/scan.md</a> show the supported
+              behavior in detail.
             </p>
           </footer>
         </article>

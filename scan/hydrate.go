@@ -29,6 +29,7 @@ func ScanAll[T any](ctx context.Context, db Queryer, q quarry.SQLer) ([]T, error
 }
 
 // One renders q and scans exactly one row, returning an error when the result is empty or ambiguous.
+// This keeps the row-count contract explicit instead of silently picking a row.
 func One[T any](ctx context.Context, db Queryer, q quarry.SQLer) (T, error) {
 	rows, err := Query(ctx, db, q)
 	if err != nil {
@@ -55,6 +56,7 @@ func One[T any](ctx context.Context, db Queryer, q quarry.SQLer) (T, error) {
 }
 
 // MaybeOne renders q and returns nil when no rows are present.
+// Callers still get an error if more than one row is returned.
 func MaybeOne[T any](ctx context.Context, db Queryer, q quarry.SQLer) (*T, error) {
 	rows, err := Query(ctx, db, q)
 	if err != nil {
@@ -77,6 +79,7 @@ func MaybeOne[T any](ctx context.Context, db Queryer, q quarry.SQLer) (*T, error
 }
 
 // All renders q and scans every row into a slice.
+// It returns an empty slice, not nil, for empty result sets.
 func All[T any](ctx context.Context, db Queryer, q quarry.SQLer) ([]T, error) {
 	rows, err := Query(ctx, db, q)
 	if err != nil {
@@ -94,7 +97,8 @@ func All[T any](ctx context.Context, db Queryer, q quarry.SQLer) ([]T, error) {
 	return values, nil
 }
 
-// collectAll reads every row from the result set and hydrates them into T values.
+// collectAll reads every row from the result set and scans them into T values.
+// The helper keeps row iteration separate from the row-mapping logic so the behavior is easy to test.
 func collectAll[T any](rows *sql.Rows) ([]T, error) {
 	columns, err := rows.Columns()
 	if err != nil {
@@ -115,12 +119,16 @@ func collectAll[T any](rows *sql.Rows) ([]T, error) {
 	return out, nil
 }
 
-// scanRow hydrates a single row into either a struct or a scalar value.
+// scanRow scans a single row into either a struct or a scalar value.
+// Structs are matched by column name; scalars are scanned directly.
 func scanRow[T any](rows *sql.Rows, columns []string) (T, error) {
 	var zero T
 	targetType := reflect.TypeOf(zero)
 	if targetType == nil {
 		return zero, fmt.Errorf("quarry scan: unsupported nil target")
+	}
+	if targetType.Kind() == reflect.Pointer {
+		return zero, fmt.Errorf("quarry scan: unsupported pointer target %s", targetType)
 	}
 
 	if targetType.Kind() != reflect.Struct {
@@ -189,6 +197,7 @@ type columnBinding struct {
 }
 
 // buildStructBindings maps columns onto struct fields while ignoring unknown columns.
+// A column may target only one field; duplicate mappings are treated as ambiguous.
 func buildStructBindings(targetType reflect.Type, columns []string) ([]columnBinding, error) {
 	fieldMap := make(map[string][]int)
 	if err := buildFieldMap(targetType, nil, fieldMap); err != nil {
@@ -223,6 +232,7 @@ func buildStructBindings(targetType reflect.Type, columns []string) ([]columnBin
 }
 
 // buildFieldMap indexes exported fields, including anonymous embedded structs.
+// db tags win first, then json tags, then snake_case names.
 func buildFieldMap(t reflect.Type, prefix []int, fieldMap map[string][]int) error {
 	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
@@ -255,6 +265,7 @@ func buildFieldMap(t reflect.Type, prefix []int, fieldMap map[string][]int) erro
 }
 
 // fieldName resolves the scan name for a field using db, json, then snake_case.
+// The tag resolution stays intentionally simple so the behavior is obvious in docs and tests.
 func fieldName(field reflect.StructField) (string, bool) {
 	if tag := field.Tag.Get("db"); tag != "" {
 		if tag == "-" {
@@ -326,6 +337,7 @@ func sameIndex(a, b []int) bool {
 }
 
 // scanModeForType determines whether a field should scan directly or via a temporary pointer.
+// Pointer targets are staged through an intermediate value so nil database values can be handled cleanly.
 func scanModeForType(t reflect.Type) (bindingMode, error) {
 	if t.Kind() == reflect.Pointer {
 		if !isSupportedScanType(t.Elem()) {
@@ -364,6 +376,7 @@ func isSupportedScanType(t reflect.Type) bool {
 }
 
 // assignRawToField applies a scanned raw value to a pointer or scalar field.
+// The pointer case keeps nil database values as nil pointers instead of zero values.
 func assignRawToField(field reflect.Value, raw any) error {
 	if !field.CanSet() {
 		return fmt.Errorf("quarry scan: unsupported field type %s", field.Type())
@@ -386,6 +399,7 @@ func assignRawToField(field reflect.Value, raw any) error {
 }
 
 // assignRawToValue converts a raw database value into the target field.
+// The conversion logic is intentionally conservative so unsupported types fail loudly.
 func assignRawToValue(dst reflect.Value, raw any) error {
 	if !dst.CanSet() {
 		return fmt.Errorf("quarry scan: unsupported field type %s", dst.Type())

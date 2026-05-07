@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2457d6" />
+    <meta name="description" content="Scan many rows example for Quarry." />
+    <link rel="icon" href="../../assets/working_logo.png" />
+    <link rel="stylesheet" href="../../assets/site.css" />
+    <title>Scan many rows - Quarry Docs</title>
+    <script defer src="../../assets/site.js"></script>
+  </head>
+  <body data-page="scan-many">
+    <div class="site-shell">
+      <header class="topbar">
+        <button class="icon-button menu-button" data-menu-toggle aria-label="Open navigation">
+          ☰
+        </button>
+        <a class="brand" href="../../" aria-label="Quarry docs home">
+          <img src="../../assets/working_logo.png" alt="" />
+          <span>
+            Quarry
+            <small>Docs</small>
+          </span>
+        </a>
+        <div class="search">
+          <input data-docs-search type="search" placeholder="Search docs" aria-label="Search the docs" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="toolbar">
+          <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <nav data-site-nav></nav>
+      </aside>
+
+      <main class="content">
+        <article class="doc-page" data-doc-content>
+          <section class="page-hero">
+            <div class="page-hero-grid">
+              <div>
+                <div class="eyebrow">Example</div>
+                <h1>Scan Many Rows</h1>
+                <p class="lead">
+                  Use <code>scan.All</code> when you want every row in the result set as a slice of
+                  structs. Unknown columns are ignored, and the query still looks like SQL.
+                </p>
+              </div>
+              <div class="hero-card">
+                <img src="../../assets/working_logo.png" alt="Quarry logo" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>The shape</h2>
+            <pre><code>type UserRow struct {
+    ID     int    `db:"id"`
+    Email  string `db:"email"`
+    Status string `db:"status"`
+}</code></pre>
+            <p>
+              This example is useful when you want a list endpoint or admin table without adding a
+              heavier abstraction.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Run it</h2>
+            <pre><code>users, err := scan.All[UserRow](ctx, db,
+    qq.Select("id", "email", "status").
+        From("users").
+        OrderBy("id ASC"),
+)</code></pre>
+            <div class="callout info">
+              <strong>Why this stays boring</strong>
+              The scan layer does one thing here: it turns rows into a slice of structs. It does not
+              track state or infer relationships.
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>What the output looks like</h2>
+            <pre><code>[{1 a@example.com active} {2 b@example.com inactive}]</code></pre>
+          </section>
+
+          <footer class="site-footer">
+            <p>
+              For the package contract, see
+              <a href="../../reference/scan/">Scan</a> and
+              <a href="../../scan.md">docs/scan.md</a>.
+            </p>
+          </footer>
+        </article>
+      </main>
+
+      <aside class="toc" data-page-toc aria-label="On this page"></aside>
+    </div>
+    <div class="nav-backdrop" data-nav-backdrop></div>
+  </body>
+</html>

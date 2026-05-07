@@ -246,6 +246,25 @@ func TestStoreStrictModeRejectsUnusedParams(t *testing.T) {
 	}
 }
 
+func TestNilRecipeAndQueryValidation(t *testing.T) {
+	cx := New()
+
+	if err := cx.Add("users.nil", nil); err == nil || !strings.Contains(err.Error(), "is nil") {
+		t.Fatalf("expected nil stored query error, got %v", err)
+	}
+	if err := cx.AddRecipe("users.nil", nil); err == nil || !strings.Contains(err.Error(), "recipe") {
+		t.Fatalf("expected nil recipe error, got %v", err)
+	}
+
+	var recipe Recipe[userStatusParams]
+	if _, err := recipe.Build(quarry.New(quarry.Postgres), userStatusParams{}); err == nil || !strings.Contains(err.Error(), "recipe is nil") {
+		t.Fatalf("expected nil recipe build error, got %v", err)
+	}
+	if _, err := recipe.WithName("users.nil").Build(quarry.New(quarry.Postgres), userStatusParams{}); err == nil || !strings.Contains(err.Error(), "recipe") {
+		t.Fatalf("expected named recipe nil error, got %v", err)
+	}
+}
+
 func TestStructBinding(t *testing.T) {
 	cx := New()
 	if err := cx.AddRawNamed("users.by_status", `SELECT * FROM users WHERE tenant_id = :tenant_id AND status = :status`); err != nil {

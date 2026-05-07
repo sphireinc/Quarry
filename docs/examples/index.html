@@ -29,7 +29,7 @@
         <div class="topbar-spacer"></div>
         <div class="toolbar">
           <button class="icon-button" data-theme-toggle aria-label="Switch theme">☾</button>
-          <a class="link-button" href="https://github.com/sphireinc/Quarry">GitHub</a>
+          <a class="link-button" href="https://github.com/sphireinc/quarry">GitHub</a>
         </div>
       </header>
 
@@ -45,10 +45,9 @@
                 <div class="eyebrow">Examples</div>
                 <h1>Practical Patterns</h1>
                 <p class="lead">
-                  The first four pages are app-shaped walkthroughs. They show the parts of Quarry
-                  that are easy to miss at first: filter-heavy queries, patch-style updates, raw
-                  SQL with guardrails, scanning, and the places where dialect behavior actually
-                  changes the result.
+                  The first four pages are app-shaped walkthroughs. The scan examples after them
+                  show the lightweight row-mapping surface Quarry keeps in-tree: one row, many
+                  rows, and a Quarry query fed straight into scan.
                 </p>
               </div>
               <div class="hero-card">
@@ -94,6 +93,24 @@
                   The older filter-heavy walkthrough, kept around as a reference for reusable query
                   shapes.
                 </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Scan examples</h2>
+            <div class="card-grid">
+              <div class="card">
+                <h3><a href="scan-one/">Scan one row</a></h3>
+                <p>A strict one-row struct scan with <code>scan.One</code> and a tiny fake driver.</p>
+              </div>
+              <div class="card">
+                <h3><a href="scan-many/">Scan many rows</a></h3>
+                <p>A slice-of-struct example that keeps the row shape visible and boring.</p>
+              </div>
+              <div class="card">
+                <h3><a href="scan-with-quarry-query/">Scan with Quarry query</a></h3>
+                <p>A Quarry-built scalar query scanned through <code>scan.One</code>.</p>
               </div>
             </div>
           </section>
