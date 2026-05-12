@@ -12,7 +12,7 @@
   <a href="go.mod">
     <img alt="Go" src="https://img.shields.io/badge/go-1.23%2B-blue.svg" />
   </a>
-  <a href="docs/index.html">
+  <a href="https://sphireinc.github.io/Quarry/">
     <img alt="Docs" src="https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg" />
   </a>
 </p>
@@ -41,7 +41,7 @@ For more detail, see:
 - [docs/compatibility.md](docs/compatibility.md) for compatibility guarantees
 - [INTEGRATION.md](INTEGRATION.md) for an end-to-end walkthrough
 
-The docs site lives under [docs/](docs/index.html).
+The docs site lives under [docs/](https://sphireinc.github.io/Quarry/).
 
 ## What Quarry Does
 
