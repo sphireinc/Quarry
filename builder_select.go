@@ -148,14 +148,14 @@ func (b *SelectBuilder) ToSQL() (string, []any, error) {
 			if i > 0 {
 				sb.write(", ")
 			}
-			if err := appendExpr(sb, col); err != nil {
+			if err := appendIdentifierLike(sb, col); err != nil {
 				return "", nil, err
 			}
 		}
 	}
 	if b.from != nil {
 		sb.write(" FROM ")
-		if err := appendExpr(sb, b.from); err != nil {
+		if err := appendIdentifierLike(sb, b.from); err != nil {
 			return "", nil, err
 		}
 	}
@@ -163,7 +163,7 @@ func (b *SelectBuilder) ToSQL() (string, []any, error) {
 		sb.write(" ")
 		sb.write(join.kind)
 		sb.write(" ")
-		if err := appendExpr(sb, join.target); err != nil {
+		if err := appendIdentifierLike(sb, join.target); err != nil {
 			return "", nil, err
 		}
 	}
@@ -179,7 +179,7 @@ func (b *SelectBuilder) ToSQL() (string, []any, error) {
 			if i > 0 {
 				sb.write(", ")
 			}
-			if err := appendExpr(sb, part); err != nil {
+			if err := appendIdentifierLike(sb, part); err != nil {
 				return "", nil, err
 			}
 		}

@@ -27,7 +27,10 @@ func TestSelectBuilder(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				wantSQL := "SELECT id, email FROM users"
+				wantSQL := `SELECT "id", "email" FROM "users"`
+				if tc.d == MySQL {
+					wantSQL = "SELECT `id`, `email` FROM `users`"
+				}
 				if sql != wantSQL {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sql)
 				}
@@ -41,7 +44,12 @@ func TestSelectBuilder(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				if sql != "SELECT * FROM users" {
+				want := map[Dialect]string{
+					Postgres: `SELECT * FROM "users"`,
+					MySQL:    "SELECT * FROM `users`",
+					SQLite:   `SELECT * FROM "users"`,
+				}
+				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch: %s", sql)
 				}
 				if len(args) != 0 {
@@ -66,9 +74,9 @@ func TestSelectBuilder(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "SELECT id, email, created_at FROM users WHERE tenant_id = $1 AND (email ILIKE $2 OR name ILIKE $3) ORDER BY created_at DESC LIMIT 50",
-					MySQL:    "SELECT id, email, created_at FROM users WHERE tenant_id = ? AND (LOWER(email) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?)) ORDER BY created_at DESC LIMIT 50",
-					SQLite:   "SELECT id, email, created_at FROM users WHERE tenant_id = ? AND (LOWER(email) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?)) ORDER BY created_at DESC LIMIT 50",
+					Postgres: `SELECT "id", "email", "created_at" FROM "users" WHERE "tenant_id" = $1 AND ("email" ILIKE $2 OR "name" ILIKE $3) ORDER BY created_at DESC LIMIT 50`,
+					MySQL:    "SELECT `id`, `email`, `created_at` FROM `users` WHERE `tenant_id` = ? AND (LOWER(`email`) LIKE LOWER(?) OR LOWER(`name`) LIKE LOWER(?)) ORDER BY created_at DESC LIMIT 50",
+					SQLite:   `SELECT "id", "email", "created_at" FROM "users" WHERE "tenant_id" = ? AND (LOWER("email") LIKE LOWER(?) OR LOWER("name") LIKE LOWER(?)) ORDER BY created_at DESC LIMIT 50`,
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -87,9 +95,9 @@ func TestSelectBuilder(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "SELECT COUNT(*) FILTER (WHERE status = $1) FROM users WHERE id IN ($2, $3, $4)",
-					MySQL:    "SELECT COUNT(*) FILTER (WHERE status = ?) FROM users WHERE id IN (?, ?, ?)",
-					SQLite:   "SELECT COUNT(*) FILTER (WHERE status = ?) FROM users WHERE id IN (?, ?, ?)",
+					Postgres: `SELECT COUNT(*) FILTER (WHERE status = $1) FROM "users" WHERE "id" IN ($2, $3, $4)`,
+					MySQL:    "SELECT COUNT(*) FILTER (WHERE status = ?) FROM `users` WHERE `id` IN (?, ?, ?)",
+					SQLite:   `SELECT COUNT(*) FILTER (WHERE status = ?) FROM "users" WHERE "id" IN (?, ?, ?)`,
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -112,13 +120,13 @@ func TestSelectBuilder(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				if sql != "SELECT * FROM users WHERE tenant_id = $1" && tc.d == Postgres {
-					t.Fatalf("sql mismatch: %s", sql)
+				want := map[Dialect]string{
+					Postgres: `SELECT * FROM "users" WHERE "tenant_id" = $1`,
+					MySQL:    "SELECT * FROM `users` WHERE `tenant_id` = ?",
+					SQLite:   `SELECT * FROM "users" WHERE "tenant_id" = ?`,
 				}
-				if tc.d != Postgres {
-					if sql != "SELECT * FROM users WHERE tenant_id = ?" {
-						t.Fatalf("sql mismatch: %s", sql)
-					}
+				if sql != want[tc.d] {
+					t.Fatalf("sql mismatch: %s", sql)
 				}
 				if fmt.Sprint(args) != fmt.Sprint([]any{42}) {
 					t.Fatalf("args mismatch: %#v", args)
@@ -136,9 +144,9 @@ func TestSelectBuilder(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "SELECT * FROM users WHERE tenant_id = $1 AND status = $2 AND enabled = $3",
-					MySQL:    "SELECT * FROM users WHERE tenant_id = ? AND status = ? AND enabled = ?",
-					SQLite:   "SELECT * FROM users WHERE tenant_id = ? AND status = ? AND enabled = ?",
+					Postgres: `SELECT * FROM "users" WHERE "tenant_id" = $1 AND "status" = $2 AND "enabled" = $3`,
+					MySQL:    "SELECT * FROM `users` WHERE `tenant_id` = ? AND `status` = ? AND `enabled` = ?",
+					SQLite:   `SELECT * FROM "users" WHERE "tenant_id" = ? AND "status" = ? AND "enabled" = ?`,
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -162,9 +170,9 @@ func TestSelectBuilder(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "SELECT * FROM users WHERE tenant_id = $1",
-					MySQL:    "SELECT * FROM users WHERE tenant_id = ?",
-					SQLite:   "SELECT * FROM users WHERE tenant_id = ?",
+					Postgres: `SELECT * FROM "users" WHERE "tenant_id" = $1`,
+					MySQL:    "SELECT * FROM `users` WHERE `tenant_id` = ?",
+					SQLite:   `SELECT * FROM "users" WHERE "tenant_id" = ?`,
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -186,9 +194,9 @@ func TestSelectBuilder(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "SELECT id, email FROM users ORDER BY created_at DESC LIMIT 50 OFFSET 0",
-					MySQL:    "SELECT id, email FROM users ORDER BY created_at DESC LIMIT 50 OFFSET 0",
-					SQLite:   "SELECT id, email FROM users ORDER BY created_at DESC LIMIT 50 OFFSET 0",
+					Postgres: `SELECT "id", "email" FROM "users" ORDER BY created_at DESC LIMIT 50 OFFSET 0`,
+					MySQL:    "SELECT `id`, `email` FROM `users` ORDER BY created_at DESC LIMIT 50 OFFSET 0",
+					SQLite:   `SELECT "id", "email" FROM "users" ORDER BY created_at DESC LIMIT 50 OFFSET 0`,
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -210,7 +218,7 @@ func TestInsertBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "INSERT INTO users (email, status) VALUES ($1, $2)" {
+	if sql != `INSERT INTO "users" ("email", "status") VALUES ($1, $2)` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{"a@example.com", "active"}) {
@@ -225,7 +233,7 @@ func TestInsertBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "INSERT INTO users (email, status) VALUES ($1, $2) RETURNING id" {
+	if sql != `INSERT INTO "users" ("email", "status") VALUES ($1, $2) RETURNING "id"` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{"a@example.com", "active"}) {
@@ -240,7 +248,7 @@ func TestInsertBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "INSERT INTO users (email, name) VALUES ($1, $2), ($3, $4)" {
+	if sql != `INSERT INTO "users" ("email", "name") VALUES ($1, $2), ($3, $4)` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{"a@example.com", "A", "b@example.com", "B"}) {
@@ -254,7 +262,7 @@ func TestInsertBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "INSERT INTO users (email, name) VALUES ($1, $2), ($3, $4)" {
+	if sql != `INSERT INTO "users" ("email", "name") VALUES ($1, $2), ($3, $4)` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{"c@example.com", "C", "d@example.com", "D"}) {
@@ -267,11 +275,18 @@ func TestInsertBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "INSERT INTO users (email, name) VALUES ($1, $2)" {
+	if sql != `INSERT INTO "users" ("email", "name") VALUES ($1, $2)` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{"a@example.com", "A"}) {
 		t.Fatalf("args mismatch: %#v", args)
+	}
+
+	_, _, err = qq.InsertInto("users").
+		SetMap(map[string]any{"email; DROP TABLE users; --": "a@example.com"}).
+		ToSQL()
+	if err == nil || !errors.Is(err, ErrInvalidIdentifier) {
+		t.Fatalf("expected invalid identifier error, got %v", err)
 	}
 }
 
@@ -287,7 +302,7 @@ func TestUpdateBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "UPDATE users SET email = $1, status = $2 WHERE id = $3 RETURNING id" {
+	if sql != `UPDATE "users" SET "email" = $1, "status" = $2 WHERE "id" = $3 RETURNING "id"` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{"a@example.com", "active", 10}) {
@@ -309,11 +324,19 @@ func TestUpdateBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "UPDATE users SET email = $1, status = $2 WHERE id = $3" {
+	if sql != `UPDATE "users" SET "email" = $1, "status" = $2 WHERE "id" = $3` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{"a@example.com", "active", 10}) {
 		t.Fatalf("args mismatch: %#v", args)
+	}
+
+	_, _, err = qq.Update("users").
+		SetMap(map[string]any{"status; DROP TABLE users; --": "active"}).
+		Where(Eq("id", 10)).
+		ToSQL()
+	if err == nil || !errors.Is(err, ErrInvalidIdentifier) {
+		t.Fatalf("expected invalid identifier error, got %v", err)
 	}
 }
 
@@ -372,7 +395,7 @@ func TestIdentifierQuotingAndValidation(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			wantSQL = "UPDATE " + quote("users") + " SET " + quote("name") + " = " + placeholderForDialect(tc.d, 1) + " WHERE id = " + placeholderForDialect(tc.d, 2)
+			wantSQL = "UPDATE " + quote("users") + " SET " + quote("name") + " = " + placeholderForDialect(tc.d, 1) + " WHERE " + quote("id") + " = " + placeholderForDialect(tc.d, 2)
 			if sql != wantSQL {
 				t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sql)
 			}
@@ -432,9 +455,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  "metadata->>'role' = ?",
 			args: []any{"admin"},
 			wantSQL: map[Dialect]string{
-				Postgres: "SELECT * FROM users WHERE metadata->>'role' = $1",
-				MySQL:    "SELECT * FROM users WHERE metadata->>'role' = ?",
-				SQLite:   "SELECT * FROM users WHERE metadata->>'role' = ?",
+				Postgres: "SELECT * FROM \"users\" WHERE metadata->>'role' = $1",
+				MySQL:    "SELECT * FROM `users` WHERE metadata->>'role' = ?",
+				SQLite:   "SELECT * FROM \"users\" WHERE metadata->>'role' = ?",
 			},
 		},
 		{
@@ -442,9 +465,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  "note = 'what?' AND id = ?",
 			args: []any{7},
 			wantSQL: map[Dialect]string{
-				Postgres: "SELECT * FROM users WHERE note = 'what?' AND id = $1",
-				MySQL:    "SELECT * FROM users WHERE note = 'what?' AND id = ?",
-				SQLite:   "SELECT * FROM users WHERE note = 'what?' AND id = ?",
+				Postgres: "SELECT * FROM \"users\" WHERE note = 'what?' AND id = $1",
+				MySQL:    "SELECT * FROM `users` WHERE note = 'what?' AND id = ?",
+				SQLite:   "SELECT * FROM \"users\" WHERE note = 'what?' AND id = ?",
 			},
 		},
 		{
@@ -452,9 +475,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  `"what?name" = ?`,
 			args: []any{7},
 			wantSQL: map[Dialect]string{
-				Postgres: `SELECT * FROM users WHERE "what?name" = $1`,
-				MySQL:    "SELECT * FROM users WHERE \"what?name\" = ?",
-				SQLite:   `SELECT * FROM users WHERE "what?name" = ?`,
+				Postgres: `SELECT * FROM "users" WHERE "what?name" = $1`,
+				MySQL:    "SELECT * FROM `users` WHERE \"what?name\" = ?",
+				SQLite:   `SELECT * FROM "users" WHERE "what?name" = ?`,
 			},
 		},
 		{
@@ -462,9 +485,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  "-- why?\nid = ?",
 			args: []any{7},
 			wantSQL: map[Dialect]string{
-				Postgres: "SELECT * FROM users WHERE -- why?\nid = $1",
-				MySQL:    "SELECT * FROM users WHERE -- why?\nid = ?",
-				SQLite:   "SELECT * FROM users WHERE -- why?\nid = ?",
+				Postgres: "SELECT * FROM \"users\" WHERE -- why?\nid = $1",
+				MySQL:    "SELECT * FROM `users` WHERE -- why?\nid = ?",
+				SQLite:   "SELECT * FROM \"users\" WHERE -- why?\nid = ?",
 			},
 		},
 		{
@@ -472,9 +495,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  "/* why? */\nid = ?",
 			args: []any{7},
 			wantSQL: map[Dialect]string{
-				Postgres: "SELECT * FROM users WHERE /* why? */\nid = $1",
-				MySQL:    "SELECT * FROM users WHERE /* why? */\nid = ?",
-				SQLite:   "SELECT * FROM users WHERE /* why? */\nid = ?",
+				Postgres: "SELECT * FROM \"users\" WHERE /* why? */\nid = $1",
+				MySQL:    "SELECT * FROM `users` WHERE /* why? */\nid = ?",
+				SQLite:   "SELECT * FROM \"users\" WHERE /* why? */\nid = ?",
 			},
 		},
 		{
@@ -482,9 +505,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  "body = $$what?$$ AND id = ?",
 			args: []any{7},
 			wantSQL: map[Dialect]string{
-				Postgres: "SELECT * FROM users WHERE body = $$what?$$ AND id = $1",
-				MySQL:    "SELECT * FROM users WHERE body = $$what?$$ AND id = ?",
-				SQLite:   "SELECT * FROM users WHERE body = $$what?$$ AND id = ?",
+				Postgres: "SELECT * FROM \"users\" WHERE body = $$what?$$ AND id = $1",
+				MySQL:    "SELECT * FROM `users` WHERE body = $$what?$$ AND id = ?",
+				SQLite:   "SELECT * FROM \"users\" WHERE body = $$what?$$ AND id = ?",
 			},
 		},
 		{
@@ -492,9 +515,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  "metadata ?| array['role', 'team'] AND id = ?",
 			args: []any{7},
 			wantSQL: map[Dialect]string{
-				Postgres: "SELECT * FROM users WHERE metadata ?| array['role', 'team'] AND id = $1",
-				MySQL:    "SELECT * FROM users WHERE metadata ?| array['role', 'team'] AND id = ?",
-				SQLite:   "SELECT * FROM users WHERE metadata ?| array['role', 'team'] AND id = ?",
+				Postgres: "SELECT * FROM \"users\" WHERE metadata ?| array['role', 'team'] AND id = $1",
+				MySQL:    "SELECT * FROM `users` WHERE metadata ?| array['role', 'team'] AND id = ?",
+				SQLite:   "SELECT * FROM \"users\" WHERE metadata ?| array['role', 'team'] AND id = ?",
 			},
 		},
 		{
@@ -502,9 +525,9 @@ func TestRawPlaceholderParsing(t *testing.T) {
 			raw:  "a = ? AND b = ?",
 			args: []any{1, 2},
 			wantSQL: map[Dialect]string{
-				Postgres: "SELECT * FROM users WHERE a = $1 AND b = $2",
-				MySQL:    "SELECT * FROM users WHERE a = ? AND b = ?",
-				SQLite:   "SELECT * FROM users WHERE a = ? AND b = ?",
+				Postgres: "SELECT * FROM \"users\" WHERE a = $1 AND b = $2",
+				MySQL:    "SELECT * FROM `users` WHERE a = ? AND b = ?",
+				SQLite:   "SELECT * FROM \"users\" WHERE a = ? AND b = ?",
 			},
 		},
 		{
@@ -561,7 +584,7 @@ func TestDeleteBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if sql != "DELETE FROM users WHERE id = $1 RETURNING id" {
+	if sql != `DELETE FROM "users" WHERE "id" = $1 RETURNING "id"` {
 		t.Fatalf("sql mismatch: %s", sql)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{10}) {
@@ -623,35 +646,35 @@ func TestBuilderCompleteness(t *testing.T) {
 			build: func(qq *Quarry) SQLer {
 				return qq.Select("*").From("users").Join(Raw("profiles ON profiles.user_id = users.id"))
 			},
-			wantSQL: "SELECT * FROM users JOIN profiles ON profiles.user_id = users.id",
+			wantSQL: `SELECT * FROM "users" JOIN profiles ON profiles.user_id = users.id`,
 		},
 		{
 			name: "left_join",
 			build: func(qq *Quarry) SQLer {
 				return qq.Select("*").From("users").LeftJoin(Raw("profiles ON profiles.user_id = users.id"))
 			},
-			wantSQL: "SELECT * FROM users LEFT JOIN profiles ON profiles.user_id = users.id",
+			wantSQL: `SELECT * FROM "users" LEFT JOIN profiles ON profiles.user_id = users.id`,
 		},
 		{
 			name: "right_join",
 			build: func(qq *Quarry) SQLer {
 				return qq.Select("*").From("users").RightJoin(Raw("profiles ON profiles.user_id = users.id"))
 			},
-			wantSQL: "SELECT * FROM users RIGHT JOIN profiles ON profiles.user_id = users.id",
+			wantSQL: `SELECT * FROM "users" RIGHT JOIN profiles ON profiles.user_id = users.id`,
 		},
 		{
 			name: "full_join",
 			build: func(qq *Quarry) SQLer {
 				return qq.Select("*").From("users").FullJoin(Raw("profiles ON profiles.user_id = users.id"))
 			},
-			wantSQL: "SELECT * FROM users FULL JOIN profiles ON profiles.user_id = users.id",
+			wantSQL: `SELECT * FROM "users" FULL JOIN profiles ON profiles.user_id = users.id`,
 		},
 		{
 			name: "cross_join",
 			build: func(qq *Quarry) SQLer {
 				return qq.Select("*").From("users").CrossJoin("profiles")
 			},
-			wantSQL: "SELECT * FROM users CROSS JOIN profiles",
+			wantSQL: `SELECT * FROM "users" CROSS JOIN "profiles"`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -706,9 +729,13 @@ func TestPredicateDepth(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				wantSQL := "SELECT * FROM users WHERE 1 = 0 AND 1 = 1"
-				if sql != wantSQL {
-					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sql)
+				wantSQL := map[Dialect]string{
+					Postgres: `SELECT * FROM "users" WHERE 1 = 0 AND 1 = 1`,
+					MySQL:    "SELECT * FROM `users` WHERE 1 = 0 AND 1 = 1",
+					SQLite:   `SELECT * FROM "users" WHERE 1 = 0 AND 1 = 1`,
+				}
+				if sql != wantSQL[tc.d] {
+					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL[tc.d], sql)
 				}
 				if len(args) != 0 {
 					t.Fatalf("expected no args, got %#v", args)
@@ -721,9 +748,9 @@ func TestPredicateDepth(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "SELECT * FROM users WHERE age BETWEEN $1 AND $2",
-					MySQL:    "SELECT * FROM users WHERE age BETWEEN ? AND ?",
-					SQLite:   "SELECT * FROM users WHERE age BETWEEN ? AND ?",
+					Postgres: "SELECT * FROM \"users\" WHERE \"age\" BETWEEN $1 AND $2",
+					MySQL:    "SELECT * FROM `users` WHERE `age` BETWEEN ? AND ?",
+					SQLite:   "SELECT * FROM \"users\" WHERE \"age\" BETWEEN ? AND ?",
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -744,9 +771,9 @@ func TestPredicateDepth(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: `SELECT * FROM accounts WHERE ("account_id", "user_id") IN (($1, $2), ($3, $4))`,
-					MySQL:    "SELECT * FROM accounts WHERE (`account_id`, `user_id`) IN ((?, ?), (?, ?))",
-					SQLite:   `SELECT * FROM accounts WHERE ("account_id", "user_id") IN ((?, ?), (?, ?))`,
+					Postgres: `SELECT * FROM "accounts" WHERE ("account_id", "user_id") IN (($1, $2), ($3, $4))`,
+					MySQL:    "SELECT * FROM `accounts` WHERE (`account_id`, `user_id`) IN ((?, ?), (?, ?))",
+					SQLite:   `SELECT * FROM "accounts" WHERE ("account_id", "user_id") IN ((?, ?), (?, ?))`,
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -759,16 +786,16 @@ func TestPredicateDepth(t *testing.T) {
 			t.Run("exists", func(t *testing.T) {
 				sql, args, err := qq.Select("*").From("users").Where(
 					Eq("tenant_id", 7),
-					Exists(qq.Select("1").From("sessions").Where(Eq("user_id", 42))),
-					NotExists(qq.Select("1").From("bans").Where(Eq("user_id", 99))),
+					Exists(qq.Select(Raw("1")).From("sessions").Where(Eq("user_id", 42))),
+					NotExists(qq.Select(Raw("1")).From("bans").Where(Eq("user_id", 99))),
 				).ToSQL()
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "SELECT * FROM users WHERE tenant_id = $1 AND EXISTS (SELECT 1 FROM sessions WHERE user_id = $2) AND NOT EXISTS (SELECT 1 FROM bans WHERE user_id = $3)",
-					MySQL:    "SELECT * FROM users WHERE tenant_id = ? AND EXISTS (SELECT 1 FROM sessions WHERE user_id = ?) AND NOT EXISTS (SELECT 1 FROM bans WHERE user_id = ?)",
-					SQLite:   "SELECT * FROM users WHERE tenant_id = ? AND EXISTS (SELECT 1 FROM sessions WHERE user_id = ?) AND NOT EXISTS (SELECT 1 FROM bans WHERE user_id = ?)",
+					Postgres: "SELECT * FROM \"users\" WHERE \"tenant_id\" = $1 AND EXISTS (SELECT 1 FROM \"sessions\" WHERE \"user_id\" = $2) AND NOT EXISTS (SELECT 1 FROM \"bans\" WHERE \"user_id\" = $3)",
+					MySQL:    "SELECT * FROM `users` WHERE `tenant_id` = ? AND EXISTS (SELECT 1 FROM `sessions` WHERE `user_id` = ?) AND NOT EXISTS (SELECT 1 FROM `bans` WHERE `user_id` = ?)",
+					SQLite:   "SELECT * FROM \"users\" WHERE \"tenant_id\" = ? AND EXISTS (SELECT 1 FROM \"sessions\" WHERE \"user_id\" = ?) AND NOT EXISTS (SELECT 1 FROM \"bans\" WHERE \"user_id\" = ?)",
 				}
 				if sql != want[tc.d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[tc.d], sql)
@@ -789,7 +816,7 @@ func TestPredicateDepth(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				if sql != "SELECT * FROM users WHERE id = ANY($1)" {
+				if sql != `SELECT * FROM "users" WHERE "id" = ANY($1)` {
 					t.Fatalf("sql mismatch: %s", sql)
 				}
 				if fmt.Sprint(args) != fmt.Sprint([]any{[]int{1, 2, 3}}) {
@@ -866,9 +893,13 @@ func TestNilAndEmptyBehavior(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				want := "SELECT * FROM users WHERE deleted_at IS NULL AND archived_at IS NOT NULL"
-				if sql != want {
-					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sql)
+				want := map[Dialect]string{
+					Postgres: `SELECT * FROM "users" WHERE "deleted_at" IS NULL AND "archived_at" IS NOT NULL`,
+					MySQL:    "SELECT * FROM `users` WHERE `deleted_at` IS NULL AND `archived_at` IS NOT NULL",
+					SQLite:   `SELECT * FROM "users" WHERE "deleted_at" IS NULL AND "archived_at" IS NOT NULL`,
+				}
+				if sql != want[d] {
+					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[d], sql)
 				}
 				if len(args) != 0 {
 					t.Fatalf("expected no args, got %#v", args)
@@ -885,9 +916,13 @@ func TestNilAndEmptyBehavior(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				want := "SELECT * FROM users"
-				if sql != want {
-					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sql)
+				want := map[Dialect]string{
+					Postgres: `SELECT * FROM "users"`,
+					MySQL:    "SELECT * FROM `users`",
+					SQLite:   `SELECT * FROM "users"`,
+				}
+				if sql != want[d] {
+					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[d], sql)
 				}
 				if len(args) != 0 {
 					t.Fatalf("expected no args, got %#v", args)
@@ -910,9 +945,13 @@ func TestNilAndEmptyBehavior(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				want := "SELECT * FROM users WHERE 1 = 0 AND 1 = 1"
-				if sql != want {
-					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sql)
+				want := map[Dialect]string{
+					Postgres: `SELECT * FROM "users" WHERE 1 = 0 AND 1 = 1`,
+					MySQL:    "SELECT * FROM `users` WHERE 1 = 0 AND 1 = 1",
+					SQLite:   `SELECT * FROM "users" WHERE 1 = 0 AND 1 = 1`,
+				}
+				if sql != want[d] {
+					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[d], sql)
 				}
 				if len(args) != 0 {
 					t.Fatalf("expected no args, got %#v", args)
@@ -929,12 +968,13 @@ func TestNilAndEmptyBehavior(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				want := "INSERT INTO users (email) VALUES (?)"
-				if d == Postgres {
-					want = "INSERT INTO users (email) VALUES ($1)"
+				want := map[Dialect]string{
+					Postgres: `INSERT INTO "users" ("email") VALUES ($1)`,
+					MySQL:    "INSERT INTO `users` (`email`) VALUES (?)",
+					SQLite:   `INSERT INTO "users" ("email") VALUES (?)`,
 				}
-				if sql != want {
-					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sql)
+				if sql != want[d] {
+					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[d], sql)
 				}
 				if len(args) != 1 || args[0] != "a@example.com" {
 					t.Fatalf("args mismatch: %#v", args)
@@ -952,9 +992,9 @@ func TestNilAndEmptyBehavior(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				want := map[Dialect]string{
-					Postgres: "UPDATE users SET name = $1 WHERE id = $2",
-					MySQL:    "UPDATE users SET name = ? WHERE id = ?",
-					SQLite:   "UPDATE users SET name = ? WHERE id = ?",
+					Postgres: `UPDATE "users" SET "name" = $1 WHERE "id" = $2`,
+					MySQL:    "UPDATE `users` SET `name` = ? WHERE `id` = ?",
+					SQLite:   `UPDATE "users" SET "name" = ? WHERE "id" = ?`,
 				}
 				if sql != want[d] {
 					t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want[d], sql)

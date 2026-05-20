@@ -3,6 +3,7 @@
 `github.com/sphireinc/quarry/scan` is Quarry's optional lightweight result-scanning package.
 
 It is intentionally small. It is not Hydra, and it is not an ORM.
+`scan` scans rows; it does not infer schemas, generate SQL, or make raw SQL safe.
 
 ## What it does
 

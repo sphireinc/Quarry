@@ -34,10 +34,10 @@ func captureStdout(t *testing.T, fn func()) string {
 
 func TestMain(t *testing.T) {
 	out := captureStdout(t, main)
-	if !strings.Contains(out, "UPDATE users SET") {
+	if !strings.Contains(out, `UPDATE "users" SET`) {
 		t.Fatalf("unexpected output: %s", out)
 	}
-	if !strings.Contains(out, "WHERE id = $4 RETURNING id") {
+	if !strings.Contains(out, `WHERE "id" = $4 RETURNING "id"`) {
 		t.Fatalf("unexpected output: %s", out)
 	}
 	if !strings.Contains(out, "Quarry User") {
@@ -51,6 +51,6 @@ func TestMain(t *testing.T) {
 func ExampleMain() {
 	main()
 	// Output:
-	// UPDATE users SET name = $1, email = $2, enabled = $3 WHERE id = $4 RETURNING id
+	// UPDATE "users" SET "name" = $1, "email" = $2, "enabled" = $3 WHERE "id" = $4 RETURNING "id"
 	// [Quarry User user@example.com true 7]
 }

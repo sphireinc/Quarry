@@ -32,6 +32,9 @@ func (b *UpdateBuilder) Set(col any, val any) *UpdateBuilder {
 }
 
 // SetMap appends deterministic SET clauses from a map.
+//
+// Map keys are treated as trusted identifiers, validated locally, and quoted
+// with the active dialect before rendering.
 func (b *UpdateBuilder) SetMap(values map[string]any) *UpdateBuilder {
 	if len(values) == 0 {
 		return b
@@ -42,7 +45,7 @@ func (b *UpdateBuilder) SetMap(values map[string]any) *UpdateBuilder {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		b.sets = append(b.sets, setClause{col: key, val: values[key]})
+		b.sets = append(b.sets, setClause{col: mapIdentifierExpr("update column", key), val: values[key]})
 	}
 	return b
 }
@@ -95,7 +98,7 @@ func (b *UpdateBuilder) ToSQL() (string, []any, error) {
 		}
 	}
 	sb.write("UPDATE ")
-	if err := appendExpr(sb, b.table); err != nil {
+	if err := appendIdentifierLike(sb, b.table); err != nil {
 		return "", nil, err
 	}
 	sb.write(" SET ")
@@ -103,7 +106,7 @@ func (b *UpdateBuilder) ToSQL() (string, []any, error) {
 		if i > 0 {
 			sb.write(", ")
 		}
-		if err := appendExpr(sb, set.col); err != nil {
+		if err := appendIdentifierLike(sb, set.col); err != nil {
 			return "", nil, err
 		}
 		sb.write(" = ")
@@ -124,7 +127,7 @@ func (b *UpdateBuilder) ToSQL() (string, []any, error) {
 			if i > 0 {
 				sb.write(", ")
 			}
-			if err := appendExpr(sb, col); err != nil {
+			if err := appendIdentifierLike(sb, col); err != nil {
 				return "", nil, err
 			}
 		}

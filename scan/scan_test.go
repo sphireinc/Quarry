@@ -205,7 +205,7 @@ func TestFieldMappingFallbacksAndUnknownColumns(t *testing.T) {
 		t.Fatalf("unexpected json fallback mapping: %#v", jsonUsers)
 	}
 
-	snakeUsers, err := scan.All[snakeFallbackUser](ctx, db, qq.Select("id", "status AS created_at").From("users").Where(quarry.Eq("id", 1)))
+	snakeUsers, err := scan.All[snakeFallbackUser](ctx, db, qq.Select("id", quarry.C("status").As("created_at")).From("users").Where(quarry.Eq("id", 1)))
 	if err != nil {
 		t.Fatalf("snake fallback all: %v", err)
 	}
@@ -350,7 +350,7 @@ func TestBuildHelper(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build: %v", err)
 	}
-	if built.SQL != "SELECT id FROM users WHERE status = ?" {
+	if built.SQL != `SELECT "id" FROM "users" WHERE "status" = ?` {
 		t.Fatalf("sql mismatch: %s", built.SQL)
 	}
 	if fmt.Sprint(built.Args) != fmt.Sprint([]any{"active"}) {

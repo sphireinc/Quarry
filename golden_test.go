@@ -63,13 +63,13 @@ func goldenCases() []GoldenCase {
 				Name:    "basic_select/" + dialectName,
 				Dialect: d,
 				Query:   qq.Select("id", "email").From("users"),
-				SQL:     "SELECT id, email FROM users",
+				SQL:     dialectSQL(d, `SELECT "id", "email" FROM "users"`, "SELECT `id`, `email` FROM `users`", `SELECT "id", "email" FROM "users"`),
 			},
 			GoldenCase{
 				Name:    "select_with_where/" + dialectName,
 				Dialect: d,
 				Query:   qq.Select("id", "email").From("users").Where(quarry.Eq("status", "active")),
-				SQL:     placeholderSQL(d, "SELECT id, email FROM users WHERE status = $1", "SELECT id, email FROM users WHERE status = ?"),
+				SQL:     dialectSQL(d, `SELECT "id", "email" FROM "users" WHERE "status" = $1`, "SELECT `id`, `email` FROM `users` WHERE `status` = ?", `SELECT "id", "email" FROM "users" WHERE "status" = ?`),
 				Args:    []any{"active"},
 			},
 			GoldenCase{
@@ -85,9 +85,10 @@ func goldenCases() []GoldenCase {
 						),
 					).
 					OrderBy("created_at DESC"),
-				SQL: placeholderSQL(d,
-					"SELECT id, email, created_at FROM users WHERE tenant_id = $1 AND (email ILIKE $2 OR name ILIKE $3) ORDER BY created_at DESC",
-					"SELECT id, email, created_at FROM users WHERE tenant_id = ? AND (LOWER(email) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?)) ORDER BY created_at DESC",
+				SQL: dialectSQL(d,
+					`SELECT "id", "email", "created_at" FROM "users" WHERE "tenant_id" = $1 AND ("email" ILIKE $2 OR "name" ILIKE $3) ORDER BY created_at DESC`,
+					"SELECT `id`, `email`, `created_at` FROM `users` WHERE `tenant_id` = ? AND (LOWER(`email`) LIKE LOWER(?) OR LOWER(`name`) LIKE LOWER(?)) ORDER BY created_at DESC",
+					`SELECT "id", "email", "created_at" FROM "users" WHERE "tenant_id" = ? AND (LOWER("email") LIKE LOWER(?) OR LOWER("name") LIKE LOWER(?)) ORDER BY created_at DESC`,
 				),
 				Args: []any{42, "%bob%", "%bob%"},
 			},
@@ -102,9 +103,10 @@ func goldenCases() []GoldenCase {
 					),
 					quarry.OptionalEq("status", ""),
 				),
-				SQL: placeholderSQL(d,
-					"SELECT * FROM users WHERE tenant_id = $1 AND (email ILIKE $2 OR name ILIKE $3)",
-					"SELECT * FROM users WHERE tenant_id = ? AND (LOWER(email) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?))",
+				SQL: dialectSQL(d,
+					`SELECT * FROM "users" WHERE "tenant_id" = $1 AND ("email" ILIKE $2 OR "name" ILIKE $3)`,
+					"SELECT * FROM `users` WHERE `tenant_id` = ? AND (LOWER(`email`) LIKE LOWER(?) OR LOWER(`name`) LIKE LOWER(?))",
+					`SELECT * FROM "users" WHERE "tenant_id" = ? AND (LOWER("email") LIKE LOWER(?) OR LOWER("name") LIKE LOWER(?))`,
 				),
 				Args: []any{42, "%bob%", "%bob%"},
 			},
@@ -114,9 +116,10 @@ func goldenCases() []GoldenCase {
 				Query: qq.InsertInto("users").
 					Columns("email", "status").
 					Values("a@example.com", "active"),
-				SQL: placeholderSQL(d,
-					"INSERT INTO users (email, status) VALUES ($1, $2)",
-					"INSERT INTO users (email, status) VALUES (?, ?)",
+				SQL: dialectSQL(d,
+					`INSERT INTO "users" ("email", "status") VALUES ($1, $2)`,
+					"INSERT INTO `users` (`email`, `status`) VALUES (?, ?)",
+					`INSERT INTO "users" ("email", "status") VALUES (?, ?)`,
 				),
 				Args: []any{"a@example.com", "active"},
 			},
@@ -127,9 +130,10 @@ func goldenCases() []GoldenCase {
 					Columns("email", "status").
 					Values("a@example.com", "active").
 					Values("b@example.com", "inactive"),
-				SQL: placeholderSQL(d,
-					"INSERT INTO users (email, status) VALUES ($1, $2), ($3, $4)",
-					"INSERT INTO users (email, status) VALUES (?, ?), (?, ?)",
+				SQL: dialectSQL(d,
+					`INSERT INTO "users" ("email", "status") VALUES ($1, $2), ($3, $4)`,
+					"INSERT INTO `users` (`email`, `status`) VALUES (?, ?), (?, ?)",
+					`INSERT INTO "users" ("email", "status") VALUES (?, ?), (?, ?)`,
 				),
 				Args: []any{"a@example.com", "active", "b@example.com", "inactive"},
 			},
@@ -140,9 +144,10 @@ func goldenCases() []GoldenCase {
 					SetIf(true, "name", "Bob").
 					SetIf(false, "ignored", "x").
 					Where(quarry.Eq("id", 10)),
-				SQL: placeholderSQL(d,
-					"UPDATE users SET name = $1 WHERE id = $2",
-					"UPDATE users SET name = ? WHERE id = ?",
+				SQL: dialectSQL(d,
+					`UPDATE "users" SET "name" = $1 WHERE "id" = $2`,
+					"UPDATE `users` SET `name` = ? WHERE `id` = ?",
+					`UPDATE "users" SET "name" = ? WHERE "id" = ?`,
 				),
 				Args: []any{"Bob", 10},
 			},
@@ -150,9 +155,10 @@ func goldenCases() []GoldenCase {
 				Name:    "delete_with_where/" + dialectName,
 				Dialect: d,
 				Query:   qq.DeleteFrom("users").Where(quarry.Eq("id", 10)),
-				SQL: placeholderSQL(d,
-					"DELETE FROM users WHERE id = $1",
-					"DELETE FROM users WHERE id = ?",
+				SQL: dialectSQL(d,
+					`DELETE FROM "users" WHERE "id" = $1`,
+					"DELETE FROM `users` WHERE `id` = ?",
+					`DELETE FROM "users" WHERE "id" = ?`,
 				),
 				Args: []any{10},
 			},
@@ -162,9 +168,10 @@ func goldenCases() []GoldenCase {
 				Query: qq.Select(quarry.Raw("COUNT(*) FILTER (WHERE status = ?)", "active")).
 					From("users").
 					Where(quarry.Raw("created_at >= ?", "2024-01-01")),
-				SQL: placeholderSQL(d,
-					"SELECT COUNT(*) FILTER (WHERE status = $1) FROM users WHERE created_at >= $2",
-					"SELECT COUNT(*) FILTER (WHERE status = ?) FROM users WHERE created_at >= ?",
+				SQL: dialectSQL(d,
+					`SELECT COUNT(*) FILTER (WHERE status = $1) FROM "users" WHERE created_at >= $2`,
+					"SELECT COUNT(*) FILTER (WHERE status = ?) FROM `users` WHERE created_at >= ?",
+					`SELECT COUNT(*) FILTER (WHERE status = ?) FROM "users" WHERE created_at >= ?`,
 				),
 				Args: []any{"active", "2024-01-01"},
 			},
@@ -184,7 +191,7 @@ func goldenCases() []GoldenCase {
 				Name:    "empty_in/" + dialectName,
 				Dialect: d,
 				Query:   qq.Select("*").From("users").Where(quarry.In("id")),
-				SQL:     "SELECT * FROM users WHERE 1 = 0",
+				SQL:     dialectSQL(d, `SELECT * FROM "users" WHERE 1 = 0`, "SELECT * FROM `users` WHERE 1 = 0", `SELECT * FROM "users" WHERE 1 = 0`),
 			},
 		)
 
@@ -202,9 +209,10 @@ func goldenCases() []GoldenCase {
 			Name:    "returning_success/" + dialectName,
 			Dialect: d,
 			Query:   qq.InsertInto("users").Columns("email").Values("a@example.com").Returning("id"),
-			SQL: placeholderSQL(d,
-				"INSERT INTO users (email) VALUES ($1) RETURNING id",
-				"INSERT INTO users (email) VALUES (?) RETURNING id",
+			SQL: dialectSQL(d,
+				`INSERT INTO "users" ("email") VALUES ($1) RETURNING "id"`,
+				"INSERT INTO `users` (`email`) VALUES (?) RETURNING `id`",
+				`INSERT INTO "users" ("email") VALUES (?) RETURNING "id"`,
 			),
 			Args: []any{"a@example.com"},
 		})
@@ -225,7 +233,7 @@ func goldenCases() []GoldenCase {
 					"status":    "active",
 				})
 			}(),
-			SQL:  "SELECT id, email FROM users WHERE tenant_id = $1 AND status = $2",
+			SQL:  `SELECT id, email FROM users WHERE tenant_id = $1 AND status = $2`,
 			Args: []any{42, "active"},
 		},
 		GoldenCase{
@@ -243,14 +251,14 @@ func goldenCases() []GoldenCase {
 					{2, 20},
 				}),
 			),
-			SQL:  `SELECT * FROM accounts WHERE ("account_id", "user_id") IN (($1, $2), ($3, $4))`,
+			SQL:  `SELECT * FROM "accounts" WHERE ("account_id", "user_id") IN (($1, $2), ($3, $4))`,
 			Args: []any{1, 10, 2, 20},
 		},
 		GoldenCase{
 			Name:    "postgres_any/postgres",
 			Dialect: quarry.Postgres,
 			Query:   postgres.Select("*").From("users").Where(quarry.Any("id", []int{1, 2, 3})),
-			SQL:     "SELECT * FROM users WHERE id = ANY($1)",
+			SQL:     `SELECT * FROM "users" WHERE "id" = ANY($1)`,
 			Args:    []any{[]int{1, 2, 3}},
 		},
 	)
@@ -274,11 +282,17 @@ func goldenCases() []GoldenCase {
 	return cases
 }
 
-func placeholderSQL(d quarry.Dialect, postgresSQL, otherSQL string) string {
-	if d == quarry.Postgres {
+func dialectSQL(d quarry.Dialect, postgresSQL, mysqlSQL, sqliteSQL string) string {
+	switch d {
+	case quarry.Postgres:
+		return postgresSQL
+	case quarry.MySQL:
+		return mysqlSQL
+	case quarry.SQLite:
+		return sqliteSQL
+	default:
 		return postgresSQL
 	}
-	return otherSQL
 }
 
 func quoteSQL(d quarry.Dialect, pgAndSQLiteSQL, mysqlSQL string) string {

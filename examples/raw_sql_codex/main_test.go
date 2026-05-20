@@ -34,7 +34,7 @@ func captureStdout(t *testing.T, fn func()) string {
 
 func TestMain(t *testing.T) {
 	out := captureStdout(t, main)
-	if !strings.Contains(out, "SELECT id, email FROM users WHERE id = $1") {
+	if !strings.Contains(out, `SELECT id, email FROM users WHERE id = $1`) {
 		t.Fatalf("unexpected output: %s", out)
 	}
 	if !strings.Contains(out, "[10]") {

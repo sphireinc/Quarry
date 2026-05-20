@@ -52,7 +52,7 @@ func (b *DeleteBuilder) ToSQL() (string, []any, error) {
 		}
 	}
 	sb.write("DELETE FROM ")
-	if err := appendExpr(sb, b.table); err != nil {
+	if err := appendIdentifierLike(sb, b.table); err != nil {
 		return "", nil, err
 	}
 	if pred := And(b.preds...); pred != nil && !pred.empty() {
@@ -70,7 +70,7 @@ func (b *DeleteBuilder) ToSQL() (string, []any, error) {
 			if i > 0 {
 				sb.write(", ")
 			}
-			if err := appendExpr(sb, col); err != nil {
+			if err := appendIdentifierLike(sb, col); err != nil {
 				return "", nil, err
 			}
 		}

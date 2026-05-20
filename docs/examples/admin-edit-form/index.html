@@ -120,12 +120,13 @@
         "role":       "moderator",
         "locked":     false,
         "updated_at":  time.Now(),
-    }).
+            }).
     Where(quarry.Eq("id", form.ID)).
     Returning("id", "role", "locked")</code></pre>
             <p>
-              <code>SetMap</code> is handy when a form or admin tool already has stable keys and you
-              want the update builder to keep the SET order deterministic.
+              <code>SetMap</code> is handy when a form or admin tool already has stable, trusted
+              keys and you want the update builder to keep the SET order deterministic. Quarry
+              validates those keys as identifiers before rendering them.
             </p>
           </section>
 
