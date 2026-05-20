@@ -84,8 +84,9 @@ q := qq.Update("profiles").
           <section class="section">
             <h2>Map-driven changes</h2>
             <p>
-              Sometimes the fields come from a map that already has stable keys. <code>SetMap</code>
-              keeps the column order deterministic, so review diffs stay readable.
+              Sometimes the fields come from a map that already has stable, trusted keys.
+              <code>SetMap</code> keeps the column order deterministic, validates the keys as
+              identifiers, and quotes them with the active dialect so review diffs stay readable.
             </p>
             <pre><code>changes := map[string]any{
     "display_name": "Alice Wu",
@@ -98,7 +99,7 @@ q := qq.Update("profiles").
     Where(quarry.Eq("id", 42))</code></pre>
 
             <pre><code>UPDATE profiles
-SET display_name = $1, theme = $2, timezone = $3
+SET "display_name" = $1, "theme" = $2, "timezone" = $3
 WHERE id = $4</code></pre>
           </section>
 

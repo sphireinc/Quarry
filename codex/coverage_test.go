@@ -237,7 +237,7 @@ func TestRecipeHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recipe to sql: %v", err)
 	}
-	if sqlText != "SELECT id FROM users WHERE id = $1" {
+	if sqlText != `SELECT "id" FROM "users" WHERE "id" = $1` {
 		t.Fatalf("sql mismatch: %s", sqlText)
 	}
 	if !reflect.DeepEqual(args, []any{10}) {

@@ -115,7 +115,7 @@ func TestOptionalPredicatesAndOrderingHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	wantSQL := "SELECT * FROM users WHERE tenant_id = $1 AND status <> $2 AND age > $3 AND score >= $4 AND rank < $5 AND level <= $6 AND name LIKE $7 AND email ILIKE $8 AND nickname = $9"
+	wantSQL := `SELECT * FROM "users" WHERE "tenant_id" = $1 AND "status" <> $2 AND "age" > $3 AND "score" >= $4 AND "rank" < $5 AND "level" <= $6 AND "name" LIKE $7 AND "email" ILIKE $8 AND "nickname" = $9`
 	if sqlText != wantSQL {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sqlText)
 	}
@@ -136,7 +136,7 @@ func TestOptionalPredicatesAndOrderingHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	wantSQL = "SELECT * FROM users WHERE id IN ($1, $2, $3) AND tags IN ($4, $5)"
+	wantSQL = `SELECT * FROM "users" WHERE "id" IN ($1, $2, $3) AND "tags" IN ($4, $5)`
 	if sqlText != wantSQL {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sqlText)
 	}
@@ -154,7 +154,7 @@ func TestOptionalPredicatesAndOrderingHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	wantSQL = "SELECT * FROM users ORDER BY created_at DESC LIMIT 25 OFFSET 10"
+	wantSQL = `SELECT * FROM "users" ORDER BY created_at DESC LIMIT 25 OFFSET 10`
 	if sqlText != wantSQL {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sqlText)
 	}
@@ -169,7 +169,7 @@ func TestOptionalPredicatesAndOrderingHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if wantSQL = "SELECT * FROM users ORDER BY email ASC"; sqlText != wantSQL {
+	if wantSQL = `SELECT * FROM "users" ORDER BY email ASC`; sqlText != wantSQL {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sqlText)
 	}
 	if len(args) != 0 {
@@ -183,7 +183,7 @@ func TestOptionalPredicatesAndOrderingHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if wantSQL = "SELECT * FROM users ORDER BY email ASC"; sqlText != wantSQL {
+	if wantSQL = `SELECT * FROM "users" ORDER BY email ASC`; sqlText != wantSQL {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sqlText)
 	}
 	if len(args) != 0 {
@@ -199,7 +199,7 @@ func TestOptionalPredicatesAndOrderingHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	wantSQL = "SELECT * FROM users ORDER BY email ASC LIMIT 7 OFFSET 3"
+	wantSQL = `SELECT * FROM "users" ORDER BY email ASC LIMIT 7 OFFSET 3`
 	if sqlText != wantSQL {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", wantSQL, sqlText)
 	}
@@ -214,7 +214,7 @@ func TestOptionalPredicatesAndOrderingHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := "INSERT INTO users (email, status) VALUES ($1, $2)"; sqlText != want {
+	if want := `INSERT INTO "users" ("email", "status") VALUES ($1, $2)`; sqlText != want {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sqlText)
 	}
 	if !reflect.DeepEqual(args, []any{"a@example.com", "active"}) {
@@ -233,7 +233,7 @@ func TestWhereIfOnUpdateAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := "UPDATE users SET name = $1 WHERE id = $2"; sqlText != want {
+	if want := `UPDATE "users" SET "name" = $1 WHERE "id" = $2`; sqlText != want {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sqlText)
 	}
 	if !reflect.DeepEqual(args, []any{"bob", 7}) {
@@ -247,7 +247,7 @@ func TestWhereIfOnUpdateAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := "DELETE FROM users WHERE id = $1"; sqlText != want {
+	if want := `DELETE FROM "users" WHERE "id" = $1`; sqlText != want {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sqlText)
 	}
 	if !reflect.DeepEqual(args, []any{7}) {
@@ -267,7 +267,7 @@ func TestBuilderPrefixesSuffixesAndBlankInputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := "/* pre */ SELECT * FROM users ORDER BY created_at DESC /* post */"; sqlText != want {
+	if want := `/* pre */ SELECT * FROM "users" ORDER BY created_at DESC /* post */`; sqlText != want {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sqlText)
 	}
 	if len(args) != 0 {
@@ -283,7 +283,7 @@ func TestBuilderPrefixesSuffixesAndBlankInputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := "/* pre */ INSERT INTO users (email) VALUES ($1) /* post */"; sqlText != want {
+	if want := `/* pre */ INSERT INTO "users" ("email") VALUES ($1) /* post */`; sqlText != want {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sqlText)
 	}
 	if !reflect.DeepEqual(args, []any{"a@example.com"}) {
@@ -300,7 +300,7 @@ func TestBuilderPrefixesSuffixesAndBlankInputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := "/* pre */ UPDATE users SET name = $1 WHERE id = $2 /* post */"; sqlText != want {
+	if want := `/* pre */ UPDATE "users" SET "name" = $1 WHERE "id" = $2 /* post */`; sqlText != want {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sqlText)
 	}
 	if !reflect.DeepEqual(args, []any{"bob", 1}) {
@@ -315,7 +315,7 @@ func TestBuilderPrefixesSuffixesAndBlankInputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if want := "/* pre */ DELETE FROM users WHERE id = $1 /* post */"; sqlText != want {
+	if want := `/* pre */ DELETE FROM "users" WHERE "id" = $1 /* post */`; sqlText != want {
 		t.Fatalf("sql mismatch\nwant: %s\ngot:  %s", want, sqlText)
 	}
 	if !reflect.DeepEqual(args, []any{1}) {
@@ -374,7 +374,7 @@ func TestCoreInternals(t *testing.T) {
 	if err := renderPredicate(sb, Not(And(Eq("id", 1), Or(Eq("status", "active"), nil))), false); err != nil {
 		t.Fatalf("render predicate: %v", err)
 	}
-	if got := sb.String(); got != "NOT ((id = $1 AND status = $2))" {
+	if got := sb.String(); got != `NOT (("id" = $1 AND "status" = $2))` {
 		t.Fatalf("unexpected not rendering: %q", got)
 	}
 
@@ -409,14 +409,14 @@ func TestCoreInternals(t *testing.T) {
 		t.Fatal("expected typed nil value to be detected")
 	}
 
-	sub := New(Postgres).Select("1").From("users").Where(Eq("id", 1))
+	sub := New(Postgres).Select(Raw("1")).From("users").Where(Eq("id", 1))
 	sb = newSQLBuilder(Postgres)
 	sb.write("EXISTS (")
 	if err := appendSubquery(sb, sub); err != nil {
 		t.Fatalf("append subquery: %v", err)
 	}
 	sb.write(")")
-	if got := sb.String(); got != "EXISTS (SELECT 1 FROM users WHERE id = $1)" {
+	if got := sb.String(); got != `EXISTS (SELECT 1 FROM "users" WHERE "id" = $1)` {
 		t.Fatalf("unexpected subquery output: %q", got)
 	}
 }
@@ -498,7 +498,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := renderPredicate(sb, &groupPredicate{op: "AND", preds: []Predicate{Eq("id", 1), Eq("status", "active")}}, false); err != nil {
 		t.Fatalf("render pointer group: %v", err)
 	}
-	if got := sb.String(); got != "id = $1 AND status = $2" {
+	if got := sb.String(); got != `"id" = $1 AND "status" = $2` {
 		t.Fatalf("unexpected pointer group output: %q", got)
 	}
 
@@ -506,7 +506,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := renderPredicate(sb, &notPredicate{pred: Eq("id", 1)}, false); err != nil {
 		t.Fatalf("render pointer not: %v", err)
 	}
-	if got := sb.String(); got != "NOT (id = $1)" {
+	if got := sb.String(); got != `NOT ("id" = $1)` {
 		t.Fatalf("unexpected pointer not output: %q", got)
 	}
 
@@ -514,7 +514,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := renderGroupPredicate(sb, groupPredicate{op: "AND", preds: []Predicate{Eq("id", 1)}}, true); err != nil {
 		t.Fatalf("render nested single group: %v", err)
 	}
-	if got := sb.String(); got != "id = $1" {
+	if got := sb.String(); got != `"id" = $1` {
 		t.Fatalf("unexpected nested single output: %q", got)
 	}
 
@@ -522,7 +522,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := renderGroupPredicate(sb, groupPredicate{op: "AND", preds: []Predicate{Eq("id", 1), Or(Eq("status", "active"), Eq("status", "pending"))}}, true); err != nil {
 		t.Fatalf("render nested group: %v", err)
 	}
-	if got := sb.String(); got != "(id = $1 AND (status = $2 OR status = $3))" {
+	if got := sb.String(); got != `("id" = $1 AND ("status" = $2 OR "status" = $3))` {
 		t.Fatalf("unexpected nested group output: %q", got)
 	}
 
@@ -538,7 +538,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := (groupPredicate{op: "AND", preds: []Predicate{Eq("id", 1)}}).appendSQL(sb); err != nil {
 		t.Fatalf("append single-child group: %v", err)
 	}
-	if got := sb.String(); got != "id = $1" {
+	if got := sb.String(); got != `"id" = $1` {
 		t.Fatalf("unexpected single-child group output: %q", got)
 	}
 
@@ -546,7 +546,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := (groupPredicate{op: "AND", preds: []Predicate{Eq("id", 1), Eq("status", "active")}}).appendSQL(sb); err != nil {
 		t.Fatalf("append group: %v", err)
 	}
-	if got := sb.String(); got != "id = $1 AND status = $2" {
+	if got := sb.String(); got != `"id" = $1 AND "status" = $2` {
 		t.Fatalf("unexpected group output: %q", got)
 	}
 
@@ -554,7 +554,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := (notPredicate{pred: Eq("id", 1)}).appendSQL(sb); err != nil {
 		t.Fatalf("append not: %v", err)
 	}
-	if got := sb.String(); got != "NOT (id = $1)" {
+	if got := sb.String(); got != `NOT ("id" = $1)` {
 		t.Fatalf("unexpected not output: %q", got)
 	}
 
@@ -567,7 +567,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := (groupPredicate{op: "AND", preds: []Predicate{Eq("id", 1), Eq("status", "active")}}).appendSQL(sb); err != nil {
 		t.Fatalf("append group: %v", err)
 	}
-	if got := sb.String(); got != "id = $1 AND status = $2" {
+	if got := sb.String(); got != `"id" = $1 AND "status" = $2` {
 		t.Fatalf("unexpected group output: %q", got)
 	}
 
@@ -575,7 +575,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := renderPredicate(sb, groupPredicate{op: "AND", preds: []Predicate{Eq("id", 1)}}, true); err != nil {
 		t.Fatalf("render single-child group: %v", err)
 	}
-	if got := sb.String(); got != "id = $1" {
+	if got := sb.String(); got != `"id" = $1` {
 		t.Fatalf("unexpected single-child output: %q", got)
 	}
 
@@ -583,7 +583,7 @@ func TestOptionalHelperInternals(t *testing.T) {
 	if err := (notPredicate{pred: Eq("id", 1)}).appendSQL(sb); err != nil {
 		t.Fatalf("append not: %v", err)
 	}
-	if got := sb.String(); got != "NOT (id = $1)" {
+	if got := sb.String(); got != `NOT ("id" = $1)` {
 		t.Fatalf("unexpected not output: %q", got)
 	}
 }
@@ -600,7 +600,7 @@ func TestSafetyAndDialectEdgeCases(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if sqlText != "SELECT users.id FROM users" {
+		if sqlText != `SELECT "users"."id" FROM "users"` {
 			t.Fatalf("unexpected raw identifier output: %q", sqlText)
 		}
 		if len(args) != 0 {
@@ -615,7 +615,7 @@ func TestSafetyAndDialectEdgeCases(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if sqlText != "SELECT * FROM users" {
+		if sqlText != `SELECT * FROM "users"` {
 			t.Fatalf("unexpected sql: %q", sqlText)
 		}
 		if len(args) != 0 {
@@ -632,7 +632,12 @@ func TestSafetyAndDialectEdgeCases(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error for %s: %v", d, err)
 			}
-			if sqlText != "SELECT * FROM users LIMIT 50 OFFSET 0" {
+			want := map[Dialect]string{
+				Postgres: `SELECT * FROM "users" LIMIT 50 OFFSET 0`,
+				MySQL:    "SELECT * FROM `users` LIMIT 50 OFFSET 0",
+				SQLite:   `SELECT * FROM "users" LIMIT 50 OFFSET 0`,
+			}
+			if sqlText != want[d] {
 				t.Fatalf("unexpected sql for %s: %q", d, sqlText)
 			}
 			if len(args) != 0 {
@@ -647,7 +652,12 @@ func TestSafetyAndDialectEdgeCases(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error for %s: %v", d, err)
 			}
-			if sqlText != "DELETE FROM users" {
+			want := map[Dialect]string{
+				Postgres: `DELETE FROM "users"`,
+				MySQL:    "DELETE FROM `users`",
+				SQLite:   `DELETE FROM "users"`,
+			}
+			if sqlText != want[d] {
 				t.Fatalf("unexpected sql for %s: %q", d, sqlText)
 			}
 			if len(args) != 0 {
@@ -655,4 +665,79 @@ func TestSafetyAndDialectEdgeCases(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestIdentifierRenderingInternals(t *testing.T) {
+	sb := newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, "*"); err != nil {
+		t.Fatalf("append wildcard identifier: %v", err)
+	}
+	if got := sb.String(); got != "*" {
+		t.Fatalf("unexpected wildcard output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, "public.users"); err != nil {
+		t.Fatalf("append qualified identifier: %v", err)
+	}
+	if got := sb.String(); got != `"public"."users"` {
+		t.Fatalf("unexpected qualified output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, "public.*"); err != nil {
+		t.Fatalf("append qualified wildcard: %v", err)
+	}
+	if got := sb.String(); got != `"public".*` {
+		t.Fatalf("unexpected qualified wildcard output: %q", got)
+	}
+
+	for _, ident := range []string{"", "   ", "public..users", "*.users", "public.*.users", "bad name"} {
+		sb = newSQLBuilder(Postgres)
+		if err := appendIdentifierLike(sb, ident); err == nil || !errors.Is(err, ErrInvalidIdentifier) {
+			t.Fatalf("expected invalid identifier for %q, got %v", ident, err)
+		}
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, (*Table)(nil)); err == nil || !strings.Contains(err.Error(), "nil table") {
+		t.Fatalf("expected nil table error, got %v", err)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, (*Column)(nil)); err == nil || !strings.Contains(err.Error(), "nil column") {
+		t.Fatalf("expected nil column error, got %v", err)
+	}
+
+	var nilExpr *comparisonPredicate
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, nilExpr); err == nil || !strings.Contains(err.Error(), "nil expression") {
+		t.Fatalf("expected nil expression error, got %v", err)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, struct{}{}); err == nil || !strings.Contains(err.Error(), "unsupported identifier type") {
+		t.Fatalf("expected unsupported identifier error, got %v", err)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, Raw("status = ?", "active")); err != nil {
+		t.Fatalf("append raw expression: %v", err)
+	}
+	if got := sb.String(); got != "status = $1" {
+		t.Fatalf("unexpected raw expression output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := mapIdentifierExpr("update column", "status").appendSQL(sb); err != nil {
+		t.Fatalf("append valid map identifier: %v", err)
+	}
+	if got := sb.String(); got != `"status"` {
+		t.Fatalf("unexpected map identifier output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := mapIdentifierExpr("update column", "bad name").appendSQL(sb); err == nil || !errors.Is(err, ErrInvalidIdentifier) || !strings.Contains(err.Error(), "invalid update column") {
+		t.Fatalf("expected invalid map identifier error, got %v", err)
+	}
 }

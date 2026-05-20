@@ -43,6 +43,9 @@ func (b *InsertBuilder) Rows(rows ...[]any) *InsertBuilder {
 }
 
 // SetMap converts a map into a deterministic INSERT column/value row.
+//
+// Map keys are treated as trusted identifiers, validated locally, and quoted
+// with the active dialect before rendering.
 func (b *InsertBuilder) SetMap(values map[string]any) *InsertBuilder {
 	if len(values) == 0 {
 		return b
@@ -50,7 +53,7 @@ func (b *InsertBuilder) SetMap(values map[string]any) *InsertBuilder {
 	if len(b.columns) == 0 {
 		keys := sortedKeys(values)
 		for _, key := range keys {
-			b.columns = append(b.columns, key)
+			b.columns = append(b.columns, mapIdentifierExpr("insert column", key))
 		}
 		row := make([]any, 0, len(keys))
 		for _, key := range keys {
@@ -116,7 +119,7 @@ func (b *InsertBuilder) ToSQL() (string, []any, error) {
 		}
 	}
 	sb.write("INSERT INTO ")
-	if err := appendExpr(sb, b.table); err != nil {
+	if err := appendIdentifierLike(sb, b.table); err != nil {
 		return "", nil, err
 	}
 	sb.write(" (")
@@ -124,7 +127,7 @@ func (b *InsertBuilder) ToSQL() (string, []any, error) {
 		if i > 0 {
 			sb.write(", ")
 		}
-		if err := appendExpr(sb, col); err != nil {
+		if err := appendIdentifierLike(sb, col); err != nil {
 			return "", nil, err
 		}
 	}
@@ -154,7 +157,7 @@ func (b *InsertBuilder) ToSQL() (string, []any, error) {
 			if i > 0 {
 				sb.write(", ")
 			}
-			if err := appendExpr(sb, col); err != nil {
+			if err := appendIdentifierLike(sb, col); err != nil {
 				return "", nil, err
 			}
 		}

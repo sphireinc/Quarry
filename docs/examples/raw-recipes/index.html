@@ -67,7 +67,8 @@
             <div class="callout info">
               <strong>Placeholder rewriting still happens</strong>
               Raw fragments keep the raw SQL visible, but <code>?</code> placeholders still become
-              dialect tokens and the scanner ignores quoted text, comments, and dollar-quoted bodies.
+              dialect tokens and the scanner ignores quoted text, comments, and dollar-quoted
+              bodies. Raw fragments are trusted SQL text; they are not a sanitizer for user input.
             </div>
           </section>
 

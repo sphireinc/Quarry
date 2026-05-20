@@ -96,8 +96,9 @@ Quarry keeps SQL safety boring and explicit: values are bound, identifiers are t
 - Treat identifiers as code, not data.
 - Never pass user-controlled identifiers directly into raw SQL.
 - Use identifier helpers for trusted tables, columns, and aliases.
+- Treat `SetMap` keys as trusted identifiers, not arbitrary user input.
 - Use `OrderBySafe` or `OrderBySafeDefault` for user-facing sort options.
-- Use `Raw(...)` only when you need to drop to SQL directly.
+- Use `Raw(...)` only when you need to drop to SQL directly and the SQL fragment itself is trusted.
 - Do not treat `Raw(...)` as a sanitizer.
 - Quarry does not make arbitrary SQL fragments safe automatically.
 
@@ -195,6 +196,7 @@ q := qq.Select(quarry.Raw("COUNT(*) FILTER (WHERE status = ?)", "active")).
 ```
 
 Raw `?` placeholders are rewritten for the target dialect. The placeholder scanner skips strings, comments, quoted identifiers, and dollar-quoted bodies.
+That scanner protects placeholder rewriting. It does not validate whether a SQL fragment is safe.
 
 ## Codex Reusable Query Store
 
@@ -245,6 +247,8 @@ It supports:
 - Forgiving handling of unknown columns
 
 For the scan contract, see [docs/scan.md](docs/scan.md).
+
+`scan` keeps raw SQL visible and does not try to sanitize arbitrary query text.
 
 For richer hydration workflows, use the standalone [`github.com/sphireinc/Hydra`](https://github.com/sphireinc/Hydra) project. See [docs/hydra.md](docs/hydra.md) for how Hydra fits alongside Quarry.
 

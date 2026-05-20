@@ -21,7 +21,7 @@ func ExampleQuarry_Select() {
 	fmt.Println(sqlText)
 	fmt.Println(args)
 	// Output:
-	// SELECT id, email FROM users WHERE status = $1
+	// SELECT "id", "email" FROM "users" WHERE "status" = $1
 	// [active]
 }
 
@@ -48,7 +48,7 @@ func ExampleSelectBuilder() {
 	fmt.Println(sqlText)
 	fmt.Println(args)
 	// Output:
-	// SELECT id, email, created_at FROM users WHERE tenant_id = $1 AND email ILIKE $2 ORDER BY created_at DESC LIMIT 25 OFFSET 0
+	// SELECT "id", "email", "created_at" FROM "users" WHERE "tenant_id" = $1 AND "email" ILIKE $2 ORDER BY created_at DESC LIMIT 25 OFFSET 0
 	// [42 %bob%]
 }
 
@@ -69,7 +69,7 @@ func ExampleSelectBuilder_OrderBySafeDefault() {
 	fmt.Println(sqlText)
 	fmt.Println(args)
 	// Output:
-	// SELECT id, email FROM users ORDER BY created_at DESC
+	// SELECT "id", "email" FROM "users" ORDER BY created_at DESC
 	// []
 }
 
@@ -91,7 +91,7 @@ func ExampleUpdateBuilder_SetOptional() {
 	fmt.Println(sqlText)
 	fmt.Println(args)
 	// Output:
-	// UPDATE users SET name = $1, email = $2, enabled = $3 WHERE id = $4 RETURNING id
+	// UPDATE "users" SET "name" = $1, "email" = $2, "enabled" = $3 WHERE "id" = $4 RETURNING "id"
 	// [Quarry User user@example.com true 7]
 }
 
@@ -110,7 +110,7 @@ func ExampleInsertBuilder_Returning() {
 	fmt.Println(sqlText)
 	fmt.Println(args)
 	// Output:
-	// INSERT INTO users (email, status) VALUES ($1, $2) RETURNING id
+	// INSERT INTO "users" ("email", "status") VALUES ($1, $2) RETURNING "id"
 	// [a@example.com active]
 }
 
@@ -128,7 +128,7 @@ func ExampleDeleteBuilder_Returning() {
 	fmt.Println(sqlText)
 	fmt.Println(args)
 	// Output:
-	// DELETE FROM users WHERE id = $1 RETURNING id
+	// DELETE FROM "users" WHERE "id" = $1 RETURNING "id"
 	// [7]
 }
 
@@ -146,7 +146,7 @@ func ExampleRaw() {
 	fmt.Println(sqlText)
 	fmt.Println(args)
 	// Output:
-	// SELECT COUNT(*) FILTER (WHERE status = $1) FROM users WHERE created_at >= $2
+	// SELECT COUNT(*) FILTER (WHERE status = $1) FROM "users" WHERE created_at >= $2
 	// [active 2024-01-01]
 }
 
@@ -188,6 +188,6 @@ func ExampleCodex() {
 	// Output:
 	// SELECT id, email FROM users WHERE id = $1
 	// [10]
-	// SELECT id, email FROM users WHERE email ILIKE $1
+	// SELECT "id", "email" FROM "users" WHERE "email" ILIKE $1
 	// [%bob%]
 }

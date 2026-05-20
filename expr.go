@@ -256,7 +256,7 @@ func NotExists(query Query) Predicate {
 // appendSQL renders the comparison as `left op arg`.
 func (p comparisonPredicate) appendSQL(b *sqlBuilder) error {
 	if isNilValue(p.value) {
-		if err := appendExpr(b, p.left); err != nil {
+		if err := appendIdentifierLike(b, p.left); err != nil {
 			return err
 		}
 		switch p.op {
@@ -270,7 +270,7 @@ func (p comparisonPredicate) appendSQL(b *sqlBuilder) error {
 			return fmt.Errorf("quarry: nil value not allowed for comparison %q: %w", p.op, ErrInvalidBuilderState)
 		}
 	}
-	if err := appendExpr(b, p.left); err != nil {
+	if err := appendIdentifierLike(b, p.left); err != nil {
 		return err
 	}
 	b.write(" ")
@@ -295,7 +295,7 @@ func (p likePredicate) appendSQL(b *sqlBuilder) error {
 	if p.caseInsensitive && !b.dialect.Supports(FeatureILike) {
 		// MySQL and SQLite do not support ILIKE, so fall back to LOWER(lhs) LIKE LOWER(rhs).
 		b.write("LOWER(")
-		if err := appendExpr(b, p.left); err != nil {
+		if err := appendIdentifierLike(b, p.left); err != nil {
 			return err
 		}
 		b.write(") LIKE LOWER(")
@@ -303,7 +303,7 @@ func (p likePredicate) appendSQL(b *sqlBuilder) error {
 		b.write(")")
 		return nil
 	}
-	if err := appendExpr(b, p.left); err != nil {
+	if err := appendIdentifierLike(b, p.left); err != nil {
 		return err
 	}
 	if p.caseInsensitive {
@@ -326,7 +326,7 @@ type nullPredicate struct {
 
 // appendSQL renders the NULL check against the active expression.
 func (p nullPredicate) appendSQL(b *sqlBuilder) error {
-	if err := appendExpr(b, p.left); err != nil {
+	if err := appendIdentifierLike(b, p.left); err != nil {
 		return err
 	}
 	if p.not {
@@ -364,7 +364,7 @@ func (p inPredicate) appendSQL(b *sqlBuilder) error {
 		}
 		return nil
 	}
-	if err := appendExpr(b, p.left); err != nil {
+	if err := appendIdentifierLike(b, p.left); err != nil {
 		return err
 	}
 	// Bind each value separately so placeholder numbering stays deterministic.
@@ -395,7 +395,7 @@ type betweenPredicate struct {
 
 // appendSQL renders the BETWEEN predicate.
 func (p betweenPredicate) appendSQL(b *sqlBuilder) error {
-	if err := appendExpr(b, p.left); err != nil {
+	if err := appendIdentifierLike(b, p.left); err != nil {
 		return err
 	}
 	b.write(" BETWEEN ")
@@ -419,7 +419,7 @@ func (p anyPredicate) appendSQL(b *sqlBuilder) error {
 	if !b.dialect.Supports(FeatureAny) {
 		return fmt.Errorf("quarry: ANY is only supported for postgres: %w", ErrUnsupportedFeature)
 	}
-	if err := appendExpr(b, p.left); err != nil {
+	if err := appendIdentifierLike(b, p.left); err != nil {
 		return err
 	}
 	b.write(" = ANY(")
@@ -491,7 +491,7 @@ func (p tupleInPredicate) appendSQL(b *sqlBuilder) error {
 		if i > 0 {
 			b.write(", ")
 		}
-		if err := appendExpr(b, col); err != nil {
+		if err := appendIdentifierLike(b, col); err != nil {
 			return err
 		}
 	}

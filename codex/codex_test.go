@@ -309,7 +309,7 @@ func TestRecipeBuild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("to sql: %v", err)
 	}
-	if sqlText != "SELECT id, email FROM users WHERE tenant_id = $1 AND email ILIKE $2 AND status = $3" {
+	if sqlText != "SELECT \"id\", \"email\" FROM \"users\" WHERE \"tenant_id\" = $1 AND \"email\" ILIKE $2 AND \"status\" = $3" {
 		t.Fatalf("sql mismatch: %s", sqlText)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{42, "%bob%", "active"}) {
@@ -380,7 +380,7 @@ func TestCodexStoresRawAndRecipe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("to sql: %v", err)
 	}
-	if sqlText != "SELECT id, email FROM users WHERE tenant_id = $1 AND email ILIKE $2 AND status = $3" {
+	if sqlText != "SELECT \"id\", \"email\" FROM \"users\" WHERE \"tenant_id\" = $1 AND \"email\" ILIKE $2 AND \"status\" = $3" {
 		t.Fatalf("sql mismatch: %s", sqlText)
 	}
 	if fmt.Sprint(args) != fmt.Sprint([]any{42, "bob", "active"}) {
