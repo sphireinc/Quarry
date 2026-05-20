@@ -666,3 +666,78 @@ func TestSafetyAndDialectEdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func TestIdentifierRenderingInternals(t *testing.T) {
+	sb := newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, "*"); err != nil {
+		t.Fatalf("append wildcard identifier: %v", err)
+	}
+	if got := sb.String(); got != "*" {
+		t.Fatalf("unexpected wildcard output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, "public.users"); err != nil {
+		t.Fatalf("append qualified identifier: %v", err)
+	}
+	if got := sb.String(); got != `"public"."users"` {
+		t.Fatalf("unexpected qualified output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, "public.*"); err != nil {
+		t.Fatalf("append qualified wildcard: %v", err)
+	}
+	if got := sb.String(); got != `"public".*` {
+		t.Fatalf("unexpected qualified wildcard output: %q", got)
+	}
+
+	for _, ident := range []string{"", "   ", "public..users", "*.users", "public.*.users", "bad name"} {
+		sb = newSQLBuilder(Postgres)
+		if err := appendIdentifierLike(sb, ident); err == nil || !errors.Is(err, ErrInvalidIdentifier) {
+			t.Fatalf("expected invalid identifier for %q, got %v", ident, err)
+		}
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, (*Table)(nil)); err == nil || !strings.Contains(err.Error(), "nil table") {
+		t.Fatalf("expected nil table error, got %v", err)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, (*Column)(nil)); err == nil || !strings.Contains(err.Error(), "nil column") {
+		t.Fatalf("expected nil column error, got %v", err)
+	}
+
+	var nilExpr *comparisonPredicate
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, nilExpr); err == nil || !strings.Contains(err.Error(), "nil expression") {
+		t.Fatalf("expected nil expression error, got %v", err)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, struct{}{}); err == nil || !strings.Contains(err.Error(), "unsupported identifier type") {
+		t.Fatalf("expected unsupported identifier error, got %v", err)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := appendIdentifierLike(sb, Raw("status = ?", "active")); err != nil {
+		t.Fatalf("append raw expression: %v", err)
+	}
+	if got := sb.String(); got != "status = $1" {
+		t.Fatalf("unexpected raw expression output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := mapIdentifierExpr("update column", "status").appendSQL(sb); err != nil {
+		t.Fatalf("append valid map identifier: %v", err)
+	}
+	if got := sb.String(); got != `"status"` {
+		t.Fatalf("unexpected map identifier output: %q", got)
+	}
+
+	sb = newSQLBuilder(Postgres)
+	if err := mapIdentifierExpr("update column", "bad name").appendSQL(sb); err == nil || !errors.Is(err, ErrInvalidIdentifier) || !strings.Contains(err.Error(), "invalid update column") {
+		t.Fatalf("expected invalid map identifier error, got %v", err)
+	}
+}
